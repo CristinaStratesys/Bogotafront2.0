@@ -59,6 +59,7 @@ Esta terminal se encarga de servir los datos desde Python.
 2.  **Inicia el servidor API:**
     ```bash
     uvicorn main:app --reload --port 8000
+    Si no va, prueba: python -m uvicorn main:app --reload --port 8000
     ```
     El Backend estará corriendo en: `http://localhost:8000`.
 
@@ -68,7 +69,7 @@ Esta terminal se encarga de servir la interfaz de usuario.
 
 1.  **Entra al directorio `frontend`:**
     ```bash
-    cd frontend
+    cd .\frontend
     ```
 2.  **Ejecuta la aplicación React:**
     ```bash

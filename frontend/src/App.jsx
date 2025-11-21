@@ -8,6 +8,8 @@ import {
   Zap, Database, Globe, ShieldCheck, Target, TrendingUp, 
   Lightbulb, Share2, Rocket, Award 
 } from 'lucide-react';
+import logoCamara from './assets/logo-camara.svg.png'
+import logoStratesys from './assets/logo-stratesys.png'
 
 // --- CONSTANTS & PALETTE ---
 const PALETTE = {
@@ -168,7 +170,7 @@ const MockBackend = {
   }
 };
 
-// --- UI COMPONENTS ---
+// --- UI COMPONENTS -----------------------------------------------------------------------------------------
 
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300 ${className}`}>
@@ -208,14 +210,22 @@ const IntroSlide = ({ onNext }) => (
     
     <div className="animate-slideUp space-y-8 z-10 max-w-4xl">
       <div className="flex justify-center gap-8 mb-8 opacity-0 animate-fadeIn delay-300" style={{ animationFillMode: 'forwards' }}>
-        {/* Logos simulados con texto estilizado para el ejemplo */}
-        <div className="flex flex-col items-end border-r-2 border-gray-300 pr-8">
-          <h3 className="text-3xl font-bold text-[#333]">Cámara de Comercio</h3>
-          <h3 className="text-3xl font-light text-[#E30613]">de Bogotá</h3>
-        </div>
-        <div className="flex flex-col items-start pl-2 justify-center">
-           <h3 className="text-4xl font-bold text-gray-800 tracking-tight">stratesys</h3>
-        </div>
+        {/* --- CÓDIGO NUEVO --- */}
+          <div className="flex items-center border-r-2 border-gray-300 pr-8">
+            {/*<img 
+            src={logoCamara} 
+             alt="Logo Cámara de Comercio de Bogotá" 
+            className="h-8 w-16 object-contain"
+               />*/}
+      </div>
+        <div className="flex items-center pl-2 justify-center">
+    {/*<img
+        src={logoStratesys}
+        alt="Logo Stratesys"
+        className="h-8 w-8 object-contain mr-2" // mr-2 añade espacio a la derecha del logo
+    />*/}
+   { /*<h3 className="text-4xl font-bold text-gray-800 tracking-tight">stratesys</h3>*/}
+</div>
       </div>
 
       <h1 className="text-6xl font-extrabold text-gray-900 leading-tight drop-shadow-sm">
@@ -686,12 +696,37 @@ export default function DashboardApp() {
       <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-50">
         <div className="flex items-center gap-4">
            {/* Logos placeholders */}
-           <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
+           {/*<div className="flex items-center gap-2 text-sm font-bold text-gray-800">
               <div className="w-8 h-8 bg-[#E30613] rounded flex items-center justify-center text-white text-xs">CCB</div>
               <span className="hidden md:inline">Cámara de Comercio de Bogotá</span>
               <span className="text-gray-300">|</span>
               <span className="text-gray-600">Stratesys</span>
-           </div>
+           </div>*/}
+           <div className="flex items-center gap-4">
+              {/* Contenedor principal de los logos */}
+              <div className="flex items-center gap-4"> 
+               {/* LOGO CÁMARA */}
+                {/* El div con border-r-2 y pr-4 crea la separación visual */}
+                <div className="flex items-center pr-4 border-r-2 border-gray-300">
+                  <img
+                   src={logoCamara}
+                    alt="Logo Cámara de Comercio de Bogotá"
+            // h-10 asegura un buen tamaño en el header de 16
+                  className="h-10 w-auto object-contain" 
+                     />
+             {/*</div>*/}
+
+                 {/* LOGO STRATESYS */}
+                   {/*<div className="flex items-center">*/}
+                   <img
+                     src={logoStratesys}
+                      alt="Logo Stratesys"
+                      className="h-10 w-auto object-contain"
+                      />
+                   </div>
+    
+               </div>
+            </div>
         </div>
         <div className="text-center font-semibold text-gray-700 text-sm uppercase tracking-wider hidden md:block">
           Proyecto MEGA

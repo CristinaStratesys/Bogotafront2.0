@@ -105,11 +105,8 @@ const DataService = {
   },
 
   getDistributionData: async () => {
-  console.log("📡 [Service] Ejecutando getDistributionData()");
-
   const realData = await DataService.fetchFromSupabase();
-  console.log("📡 [Service] Datos recibidos desde fetchFromSupabase():", realData);
-
+  
   if (realData === null) {
     return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
   }
@@ -119,10 +116,15 @@ const DataService = {
   }
 
   console.log("📡 [Service] Procesando datos...");
-
-  // Agrupaciones reales
+  
+  
+  ///HACER TODOS LOS PROCESAMIENTOS AQUI
+  // Agrupaciones reales  
   const sectors = {};
   const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
+  //const techLevels = { 'Bajo - Uso limitado de herramientas tecnológicas básicas': 0, 'Medio - Digitalización de algunos procesos': 0, 'Alto - Automatización, analítica, plataformas integradas': 0, 'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0 };
+  const sectorsTech = {};
+
 
   realData.forEach(row => {
     // Procesar industrias
@@ -132,12 +134,27 @@ const DataService = {
     // Procesar número de empleados
     const numEmpleados = row.empleados || '1-50';
     employeesGroups[numEmpleados] = employeesGroups[numEmpleados] || 0;
-  
-    
-    if (employeesGroups.hasOwnProperty(numEmpleados)) {
+     if (employeesGroups.hasOwnProperty(numEmpleados)) {
       employeesGroups[numEmpleados] += 1;
     }
-  });
+    // Procesar nivel de adopción tecnológica
+
+    const adopcion_tech = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
+    if (!sectorsTech[industria]) {
+    sectorsTech[industria] = {
+      'Bajo - Uso limitado de herramientas tecnológicas básicas': 0,
+      'Medio - Digitalización de algunos procesos': 0,
+      'Alto - Automatización, analítica, plataformas integradas': 0,
+      'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
+    };
+  }
+
+  sectorsTech[industria][adopcion_tech] += 1;
+});
+   
+  
+
+  
 
   const treemapData = Object.keys(sectors).map(key => ({
     name: key,
@@ -150,11 +167,24 @@ const DataService = {
     value: employeesGroups[key]
   }));
 
+  const techAdoptionData = Object.entries(sectorsTech).map(([industry, levels]) => {
+    const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+    return {
+      name: industry,
+      Bajo: total ? (levels["Bajo - Uso limitado de herramientas tecnológicas básicas"] / total) * 100 : 0,
+      Medio: total ? (levels["Medio - Digitalización de algunos procesos"] / total) * 100 : 0,
+      Alto: total ? (levels["Alto - Automatización, analítica, plataformas integradas"] / total) * 100 : 0,
+      Avanzado: total ? (levels["Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc."] / total) * 100 : 0,
+    };
+  });
+
+
   console.log("📡 [Service] Resultado final listo.");
 
   return {
     treemap: treemapData,
-    employees: { total: employeeData }
+    employees: { total: employeeData },
+    techAdoption:{ total: techAdoptionData}
   };
 }
 
@@ -342,6 +372,74 @@ const Block1 = ({ isActive }) => {
   );
 };
 
+const Block2 = ({ isActive }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isActive && !data) {
+      setLoading(true);
+
+      const loadData = async () => {
+        console.log("▶️ [Block2] Ejecutando getDistributionData()");
+        try {
+          const result = await DataService.getDistributionData(); // <-- llamada real
+          console.log("📊 [Block2] Resultado recibido:", result);
+          setData(result);
+        } catch (error) {
+          console.error("[Block2] Error al cargar datos:", error);
+          setData({ error: "No se pudo cargar la información de adopción tecnológica." });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadData();
+    }
+  }, [isActive, data]);
+
+  if (loading || !data) return <LoadingOverlay text="Analizando Madurez Digital..." />;
+
+  if (data.error) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage message={data.error} isError={true} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col p-8 animate-fadeIn">
+      <SectionTitle title="Nivel de Adopción Tecnológica" subtitle="Madurez digital por sector industrial" />
+      <Card className="flex-1 p-8">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data.techAdoption.total} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="name" tick={{ fill: '#666' }} />
+            <YAxis unit="%" />
+            <RechartsTooltip
+              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              cursor={{ fill: 'transparent' }}
+            />
+            <Legend verticalAlign="top" height={36} />
+            {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                stackId="a"
+                fill={PALETTE.levels[key]}
+                animationDuration={1500}
+                animationBegin={300}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
+
+
 // --- SLIDE 6 (AI VISION) ---
 
 const Block6 = ({ isActive }) => {
@@ -429,7 +527,7 @@ const Block6 = ({ isActive }) => {
 
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 3; // Reducido a 3: Intro, Block1, Block6
+  const totalSlides = 4; // Reducido a 3: Intro, Block1, Block2, Block6
 
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -460,7 +558,9 @@ export default function DashboardApp() {
       <main className="flex-1 relative overflow-hidden">
         {currentSlide === 0 && <IntroSlide onNext={nextSlide} />}
         {currentSlide === 1 && <Block1 isActive={true} />}
-        {currentSlide === 2 && <Block6 isActive={true} />}
+        {currentSlide === 2 && <Block2 isActive={true} />}
+        
+        {currentSlide === 3 && <Block6 isActive={true} />}
       </main>
 
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

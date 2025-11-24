@@ -105,61 +105,55 @@ const DataService = {
   },
 
   getDistributionData: async () => {
+  console.log("📡 [Service] Ejecutando getDistributionData()");
 
-    console.log("📡 [REQUEST] Headers usados:", headers);
-    console.log("📡 [REQUEST] URL llamada:", `${ENDPOINT}?select=*`);
-    
-    const realData = await DataService.fetchFromSupabase();
-    
-    // Si realData es null, significa un error de conexión
-    if (realData === null) {
-        return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
+  const realData = await DataService.fetchFromSupabase();
+  console.log("📡 [Service] Datos recibidos desde fetchFromSupabase():", realData);
+
+  if (realData === null) {
+    return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
+  }
+
+  if (realData.length === 0) {
+    return { empty: "No se encontraron datos en la tabla.", treemap: [], employees: { total: [] } };
+  }
+
+  console.log("📡 [Service] Procesando datos...");
+
+  // Agrupaciones reales
+  const sectors = {};
+  const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
+
+  realData.forEach(row => {
+    const sector = row.sector || 'Otros'; 
+    const numEmpleados = row.num_empleados || '1-50';
+
+    sectors[sector] = (sectors[sector] || 0) + 1;
+
+    if (employeesGroups.hasOwnProperty(numEmpleados)) {
+      employeesGroups[numEmpleados] += 1;
     }
+  });
 
-    // Si realData es un array vacío, significa que no hay registros
-    if (realData.length === 0) {
-        return { empty: "No se encontraron datos en la tabla.", treemap: [], employees: { total: [] } };
-    }
-      
-    // Lógica de transformación de datos reales
-    // Agrupamos por una columna hipotética 'sector' (AJUSTAR SEGÚN TU ESQUEMA REAL)
-    const sectors = {};
-    const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
+  const treemapData = Object.keys(sectors).map(key => ({
+    name: key,
+    size: sectors[key],
+    fill: PALETTE.industries[key] || PALETTE.industries['Otra']
+  }));
 
-    realData.forEach(row => {
-        // Asume que tienes una columna 'sector' y una columna 'num_empleados' en tu tabla
-        const sector = row.sector || 'Otros'; 
-        const numEmpleados = row.num_empleados || '1-50'; // Usar un valor por defecto si falta
-        
-        // 1. Datos para el Treemap (Sectores)
-        sectors[sector] = (sectors[sector] || 0) + 1;
+  const employeeData = Object.keys(employeesGroups).map(key => ({
+    name: key,
+    value: employeesGroups[key]
+  }));
 
-        // 2. Datos para la Torta (Empleados)
-        if (employeesGroups.hasOwnProperty(numEmpleados)) {
-            employeesGroups[numEmpleados] += 1;
-        }
-    });
+  console.log("📡 [Service] Resultado final listo.");
 
-    // Transformar para el Treemap
-    const treemapData = Object.keys(sectors).map(key => ({
-      name: key,
-      size: sectors[key],
-      fill: PALETTE.industries[key] || PALETTE.industries['Otra']
-    }));
-    
-    // Transformar para la gráfica de Empleados (Pie Chart)
-    const employeeData = Object.keys(employeesGroups).map(key => ({
-        name: key,
-        value: employeesGroups[key]
-    }));
+  return {
+    treemap: treemapData,
+    employees: { total: employeeData }
+  };
+}
 
-    return {
-      treemap: treemapData,
-      employees: {
-         total: employeeData
-      }
-    };
-  },
 };
 
 // --- UI COMPONENTS ---

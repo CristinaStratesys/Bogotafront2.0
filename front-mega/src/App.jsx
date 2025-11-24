@@ -125,11 +125,15 @@ const DataService = {
   const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
 
   realData.forEach(row => {
-    const sector = row.sector || 'Otros'; 
-    const numEmpleados = row.num_empleados || '1-50';
-
-    sectors[sector] = (sectors[sector] || 0) + 1;
-
+    // Procesar industrias
+    const industria = row.industria && row.industria.trim() !== "" ? row.industria : "Otros";
+    sectors[industria] = (sectors[industria] || 0) + 1;
+    
+    // Procesar número de empleados
+    const numEmpleados = row.empleados || '1-50';
+    employeesGroups[numEmpleados] = employeesGroups[numEmpleados] || 0;
+  
+    
     if (employeesGroups.hasOwnProperty(numEmpleados)) {
       employeesGroups[numEmpleados] += 1;
     }

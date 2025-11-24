@@ -1,87 +1,114 @@
-# 🚀 Proyecto MEGA - Dashboard Interactivo (React + Python FastAPI)
+📊 Dashboard Proyecto MEGA - Visión Empresarial 2025
 
-Este repositorio contiene la arquitectura desacoplada (Frontend y Backend separados) para el proyecto de análisis empresarial MEGA.
+Este proyecto es un dashboard interactivo desarrollado para visualizar los resultados de la Encuesta de Visión Empresarial (Cámara de Comercio de Bogotá & Stratesys). Utiliza gráficos dinámicos y animaciones para presentar datos sobre madurez digital, distribución industrial y tecnologías habilitadoras.
 
-El **Frontend** (interfaz de usuario) está construido con **React (Vite)** y **Tailwind CSS**.
-El **Backend** (API de datos) está construido con **Python (FastAPI)**.
+🚀 Tecnologías Utilizadas
 
----
+React (v18+)
 
-## ⚙️ Requisitos Previos
+Vite (Build tool & Dev Server)
 
-Asegúrate de tener instalados los siguientes programas en tu sistema:
+Recharts (Librería de gráficos)
 
-1.  **Python** (versión 3.9+)
-2.  **Node.js y npm** (o yarn/pnpm)
-3.  **Git**
-4.  Un editor de código (Se recomienda **VS Code**)
+Lucide React (Paquete de iconos)
 
----
+Tailwind CSS (Estilos y diseño responsivo)
 
-## 🛠️ 1. Configuración Inicial (Solo la Primera Vez)
+🛠️ Requisitos Previos
 
-Si acabas de clonar el repositorio, debes ejecutar estos comandos para instalar todas las dependencias:
+Antes de comenzar, asegúrate de tener instalado en tu sistema:
 
-* **En la carpeta `backend`:**
-    ```bash
-    # Crear entorno virtual (si no existe)
-    python -m venv venv
-    # Activar el entorno
-    # [Windows]: venv\Scripts\activate
-    # [Mac/Linux]: source venv/bin/activate
-    # Instalar librerías
-    pip install fastapi "uvicorn[standard]"
-    ```
-* **En la carpeta `frontend`:**
-    ```bash
-    npm install
-    # Configuración Tailwind (si es necesaria)
-    npx tailwindcss init -p
-    ```
+Node.js (Versión 16 o superior recomendada).
 
----
+Git.
 
-## ▶️ 2. Uso Diario y Reactivación del Proyecto
+📥 Instalación y Ejecución (Quick Start)
 
-Para trabajar en el proyecto, necesitas **dos terminales separadas** corriendo simultáneamente: una para el Backend y otra para el Frontend.
+Sigue estos pasos si acabas de clonar este repositorio:
 
-### Terminal 1: Iniciar el Backend (API de Datos)
+1. Clonar el repositorio
 
-Esta terminal se encarga de servir los datos desde Python.
+Abre tu terminal y ejecuta:
 
-1.  **Entra al directorio `backend`** y activa el entorno virtual:
-    ```bash
-    cd backend
-    # EJECUTAR EL COMANDO DE ACTIVACIÓN:
-    # Windows: venv\Scripts\activate
-    # Mac/Linux: source venv/bin/activate
-    ```
-2.  **Inicia el servidor API:**
-    ```bash
-    uvicorn main:app --reload --port 8000
-    Si no va, prueba: python -m uvicorn main:app --reload --port 8000
-    ```
-    El Backend estará corriendo en: `http://localhost:8000`.
+git clone <URL_DE_TU_REPOSITORIO>
+cd front-mega
 
-### Terminal 2: Iniciar el Frontend (Aplicación React)
 
-Esta terminal se encarga de servir la interfaz de usuario.
+2. Instalar dependencias
 
-1.  **Entra al directorio `frontend`:**
-    ```bash
-    cd .\frontend
-    ```
-2.  **Ejecuta la aplicación React:**
-    ```bash
-    npm run dev
-    ```
-    El Frontend estará accesible en: `http://localhost:5173`.
+Este paso es crucial. Descargará todas las librerías necesarias (React, Recharts, Tailwind, etc.) listadas en el package.json.
 
----
+npm install
 
-## 🔗 3. Conexión y Pruebas
 
-1.  Una vez que ambos servidores muestren `Running` o `Ready` en sus terminales, abre la URL del Frontend (`http://localhost:5173`) en tu navegador.
-2.  La aplicación de React se cargará e intentará automáticamente conectarse al servidor Python (`:8000`) para obtener los datos.
+3. Ejecutar el servidor de desarrollo
 
-**(Nota: Si encuentras problemas de CORS, deberás añadir configuración de CORS a tu archivo principal de FastAPI/Python.)**
+Para ver el proyecto en tu navegador:
+
+npm run dev
+
+
+Haz clic en el enlace que aparece en la terminal (usualmente http://localhost:5173/).
+
+🆘 Solución de Problemas Comunes
+
+Error: "Failed to resolve import 'recharts' or 'lucide-react'"
+
+Si al ejecutar npm run dev ves un error indicando que faltan módulos, significa que las dependencias no se instalaron correctamente. Ejecuta manualmente:
+
+npm install recharts lucide-react
+
+
+Los estilos se ven "rotos" o feos (Tailwind CSS)
+
+Si la aplicación carga pero no tiene estilos (se ve todo blanco y desordenado), asegúrate de que Tailwind esté configurado.
+
+Instalar Tailwind (si no está):
+
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+
+Verificar tailwind.config.js:
+Asegúrate de que el archivo tenga esta configuración en content:
+
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+
+
+Verificar src/index.css:
+Debe incluir estas tres líneas al principio:
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+📂 Estructura del Proyecto
+
+/
+├── public/              # Archivos estáticos
+├── src/
+│   ├── App.jsx          # Componente principal (Dashboard)
+│   ├── index.css        # Estilos globales y directivas de Tailwind
+│   └── main.jsx         # Punto de entrada de React
+├── package.json         # Lista de dependencias y scripts
+├── tailwind.config.js   # Configuración de estilos
+└── vite.config.js       # Configuración del compilador
+
+
+📜 Scripts Disponibles
+
+npm run dev: Inicia el servidor de desarrollo.
+
+npm run build: Compila la aplicación para producción.
+
+npm run preview: Vista previa local de la build de producción.

@@ -106,7 +106,7 @@ const DataService = {
  
   getDistributionData: async () => {
   const realData = await DataService.fetchFromSupabase();
- 
+  
   if (realData === null) {
     return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
   }
@@ -116,16 +116,16 @@ const DataService = {
   }
  
   console.log("📡 [Service] Procesando datos...");
- 
- 
+  
+  
   ///HACER TODOS LOS PROCESAMIENTOS AQUI
   // Agrupaciones reales  
   const sectors = {};
   const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
   //const techLevels = { 'Bajo - Uso limitado de herramientas tecnológicas básicas': 0, 'Medio - Digitalización de algunos procesos': 0, 'Alto - Automatización, analítica, plataformas integradas': 0, 'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0 };
   const sectorsTech = {};
- 
- 
+
+
   realData.forEach(row => {
     // Procesar industrias
     const industria = row.industria && row.industria.trim() !== "" ? row.industria : "Otros";
@@ -138,7 +138,7 @@ const DataService = {
       employeesGroups[numEmpleados] += 1;
     }
     // Procesar nivel de adopción tecnológica
- 
+
     const adopcion_tech = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
     if (!sectorsTech[industria]) {
     sectorsTech[industria] = {
@@ -148,14 +148,14 @@ const DataService = {
       'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
     };
   }
- 
+
   sectorsTech[industria][adopcion_tech] += 1;
 });
    
- 
- 
- 
- 
+  
+
+  
+
   const treemapData = Object.keys(sectors).map(key => ({
     name: key,
     size: sectors[key],
@@ -166,7 +166,7 @@ const DataService = {
     name: key,
     value: employeesGroups[key]
   }));
- 
+
   const techAdoptionData = Object.entries(sectorsTech).map(([industry, levels]) => {
     const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
     return {
@@ -177,12 +177,14 @@ const DataService = {
       Avanzado: total ? (levels["Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc."] / total) * 100 : 0,
     };
   });
- 
- 
+
+
   console.log("📡 [Service] Resultado final listo.");
  
   return {
     treemap: treemapData,
+    employees: { total: employeeData },
+    techAdoption:{ total: techAdoptionData}
     employees: { total: employeeData },
     techAdoption:{ total: techAdoptionData}
   };
@@ -371,15 +373,15 @@ const Block1 = ({ isActive }) => {
     </div>
   );
 };
- 
+
 const Block2 = ({ isActive }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
- 
+
   useEffect(() => {
     if (isActive && !data) {
       setLoading(true);
- 
+
       const loadData = async () => {
         console.log("▶️ [Block2] Ejecutando getDistributionData()");
         try {
@@ -393,13 +395,13 @@ const Block2 = ({ isActive }) => {
           setLoading(false);
         }
       };
- 
+
       loadData();
     }
   }, [isActive, data]);
- 
+
   if (loading || !data) return <LoadingOverlay text="Analizando Madurez Digital..." />;
- 
+
   if (data.error) {
     return (
       <div className="p-8 h-full">
@@ -407,7 +409,7 @@ const Block2 = ({ isActive }) => {
       </div>
     );
   }
- 
+
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
       <SectionTitle title="Nivel de Adopción Tecnológica" subtitle="Madurez digital por sector industrial" />
@@ -438,8 +440,6 @@ const Block2 = ({ isActive }) => {
     </div>
   );
 };
- 
- 
 // --- SLIDE 6 (AI VISION) ---
  
 const Block6 = ({ isActive }) => {
@@ -528,7 +528,7 @@ const Block6 = ({ isActive }) => {
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 4; // Reducido a 3: Intro, Block1, Block2, Block6
- 
+
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
  
@@ -559,7 +559,7 @@ export default function DashboardApp() {
         {currentSlide === 0 && <IntroSlide onNext={nextSlide} />}
         {currentSlide === 1 && <Block1 isActive={true} />}
         {currentSlide === 2 && <Block2 isActive={true} />}
-       
+        
         {currentSlide === 3 && <Block6 isActive={true} />}
       </main>
  

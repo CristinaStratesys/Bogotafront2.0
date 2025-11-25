@@ -438,7 +438,174 @@ const Block2 = ({ isActive }) => {
     </div>
   );
 };
- 
+
+// --- SLIDE 5 (NUBE DE PALABRAS)
+// --- SLIDE 5 (NUBE DE PALABRAS) ---
+// --- BLOQUE 5: Nube de palabras (tabla `nube_palabras`) ---
+const Block5 = ({ isActive }) => {
+  const [words, setWords] = useState(null);        // datos de la nube
+  const [error, setError] = useState(null);        // mensaje de error (si lo hay)
+  const [emptyMsg, setEmptyMsg] = useState(null);  // mensaje de "sin datos"
+  const [loading, setLoading] = useState(false);   // estado de carga
+
+  useEffect(() => {
+    if (!isActive || words !== null || loading) return;
+
+    const fetchWordCloud = async () => {
+      setLoading(true);
+      setError(null);
+      setEmptyMsg(null);
+
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        console.error("[Block5] Faltan VITE_SUPABASE_URL o VITE_SUPABASE_KEY");
+        setError(
+          "Faltan las credenciales de Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_KEY)."
+        );
+        setWords([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const WORDS_ENDPOINT = `${SUPABASE_URL}/rest/v1/nube_palabras`;
+
+        const params = new URLSearchParams({
+          select: "palabra,frecuencia",
+        });
+        params.append("order", "frecuencia.desc");
+
+        const url = `${WORDS_ENDPOINT}?${params.toString()}`;
+        const headers = {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Accept: "application/json",
+        };
+
+        console.log("▶️ [Block5] Llamando a:", url);
+
+        const response = await fetch(url, { headers });
+        const rawText = await response.text();
+        console.log(
+          "📡 [Block5] Status:",
+          response.status,
+          response.statusText,
+          "Body:",
+          rawText
+        );
+
+        if (!response.ok) {
+          setError(
+            `Error HTTP ${response.status} - ${response.statusText}. Respuesta del servidor: ${rawText || "(sin cuerpo)"}`
+          );
+          setWords([]);
+          setLoading(false);
+          return;
+        }
+
+        const data = rawText ? JSON.parse(rawText) : [];
+
+        const mapped = (data || [])
+          .map((row) => ({
+            text: (row.palabra || "").toUpperCase(),
+            value: Number(row.frecuencia) || 0,
+          }))
+          .filter((w) => w.text && w.value > 0);
+
+        if (!mapped.length) {
+          setEmptyMsg("No se encontraron registros en la tabla 'nube_palabras'.");
+        }
+
+        setWords(mapped);
+      } catch (err) {
+        console.error("❌ [Block5] Error cargando nube de palabras:", err);
+        setError(
+          `No se pudo cargar la nube de palabras desde la base de datos. Detalle: ${
+            err?.message || String(err)
+          }`
+        );
+        setWords([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWordCloud();
+  }, [isActive, words, loading]);
+
+  // --- RENDER ---
+
+  if (loading || words === null) {
+    return (
+      <LoadingOverlay text="Procesando Nube de Palabras... Intentando conexión con la API REST de Supabase..." />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage message={error} isError={true} tableName="nube_palabras" />
+      </div>
+    );
+  }
+
+  if (emptyMsg || !words.length) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage
+          message={emptyMsg || "No se encontraron registros en la tabla 'nube_palabras'."}
+          isError={false}
+          tableName="nube_palabras"
+        />
+      </div>
+    );
+  }
+
+  // Nube de palabras OK
+  return (
+    <div className="h-full flex flex-col p-8 animate-fadeIn">
+      <SectionTitle
+        title="Propósito Empresarial Actual"
+        subtitle="Palabras más usadas en la encuesta"
+      />
+
+      <Card className="flex-1 relative flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
+        <div className="flex flex-wrap justify-center items-center content-center gap-4 max-w-5xl p-10">
+          {words.map((word, i) => {
+            // Normalizamos tamaño: mínimo 16px, máximo 48px
+            const rawSize = word.value / 1.5;
+            const fontSize = Math.min(48, Math.max(16, rawSize));
+            const opacity = Math.max(0.4, Math.min(1, word.value / 100));
+            const color =
+              i % 3 === 0
+                ? PALETTE.primary
+                : i % 3 === 1
+                ? PALETTE.secondary
+                : "#555";
+
+            return (
+              <span
+                key={`${word.text}-${i}`}
+                className="cursor-default hover:scale-110 transition-transform duration-300 font-bold inline-block"
+                style={{
+                  fontSize: `${fontSize}px`,
+                  color,
+                  opacity,
+                }}
+                title={`${word.text}: ${word.value} menciones`}
+              >
+                {word.text}
+              </span>
+            );
+          })}
+        </div>
+        <div className="absolute bottom-4 right-4 text-xs text-gray-400">
+          * Datos obtenidos de la tabla <strong>nube_palabras</strong> en Supabase
+        </div>
+      </Card>
+    </div>
+  );
+};
+
  
 // --- SLIDE 6 (AI VISION) ---
  
@@ -527,7 +694,7 @@ const Block6 = ({ isActive }) => {
  
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 4; // Reducido a 3: Intro, Block1, Block2, Block6
+  const totalSlides = 5; // Reducido a 3: Intro, Block1, Block2, Block6
  
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -559,8 +726,9 @@ export default function DashboardApp() {
         {currentSlide === 0 && <IntroSlide onNext={nextSlide} />}
         {currentSlide === 1 && <Block1 isActive={true} />}
         {currentSlide === 2 && <Block2 isActive={true} />}
+        {currentSlide === 3 && <Block5 isActive={true} />}
        
-        {currentSlide === 3 && <Block6 isActive={true} />}
+        {currentSlide === 4 && <Block6 isActive={true} />}
       </main>
  
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

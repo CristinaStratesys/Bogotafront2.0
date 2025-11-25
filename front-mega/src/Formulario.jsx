@@ -92,16 +92,16 @@ export default function App() {
     ];
 
     const salesVolumes = [
-        "Pequeña — < $1.000 M",
-        "Mediana (baja) — $1.000–10.000 M",
-        "Mediana (alta) — $10.000–50.000 M",
-        "Grande — > $50.000 M"
+        "Pequeña - < $1.000 M",
+        "Mediana (baja) - $1.000–10.000 M",
+        "Mediana (alta) - $10.000–50.000 M",
+        "Grande - > $50.000 M"
     ];
 
     const employeeRanges = [
-        "1–50",
-        "51–200",
-        "201–500 ",
+        "1-50",
+        "51-200",
+        "201-500 ",
         ">500"
     ];
 

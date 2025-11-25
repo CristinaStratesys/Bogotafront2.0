@@ -5,7 +5,6 @@ import { Routes, Route } from 'react-router-dom';
 // Importa tus componentes
 import Formulario from './Formulario.jsx'; 
 import Graficos from './Graficos.jsx'; 
-import Dashboard_vivo from './Dashboard_vivo.jsx'; 
 
 // Este componente define qué se muestra en cada URL
 export default function Rutas() {
@@ -17,8 +16,6 @@ export default function Rutas() {
 
       {/* 2. Ruta para el formulario (http://localhost:XXXX/Formulario) */}
       <Route path="/Formulario" element={<Formulario />} />
-      
-      <Route path="/Dashboard" element={<Dashboard_vivo />} />
 
       {/* Opcional: Ruta para manejar 404s */}
       <Route path="*" element={

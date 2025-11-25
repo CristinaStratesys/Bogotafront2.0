@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   ChevronRight, ChevronLeft, Activity, Brain, Users, Building2,
-  Zap, Database, Globe, Share2, Rocket, AlertTriangle
+  Zap, Database, Globe, Share2, Rocket, AlertTriangle, Clock, TrendingUp
 } from 'lucide-react';
 // La librería @supabase/supabase-js ha sido eliminada. Usaremos 'fetch' directamente.
  
@@ -263,6 +263,29 @@ const IntroSlide = ({ onNext }) => (
     </div>
   </div>
 );
+
+// --- NUEVA ESTRUCTURA DE DATOS MOCK PARA IA ---
+const AI_TIMELINE_DATA = [
+    {
+        period: "HOY (2025)", // Título fijo
+        icon: Clock, // Icono fijo
+        theme: "Foco en la Resiliencia",
+        description: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica** para asegurar la estabilidad del flujo de caja y mantener la competitividad en mercados volátiles."
+    },
+    {
+        period: "EVOLUCIÓN", // Título fijo
+        icon: TrendingUp, // Icono fijo
+        theme: "La Brecha Estratégica",
+        description: "La **transición** crítica exige pasar de la eficiencia (estandarización) a la creación de valor mediante la **innovación continua**, la construcción de una sólida gobernanza de datos y el desarrollo de nuevos liderazgos."
+    },
+    {
+        period: "+18 AÑOS (2043)", // Título fijo
+        icon: Rocket, // Icono fijo
+        theme: "Visión de Liderazgo Global",
+        description: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva, modelos de negocio regenerativos basados en la economía circular y una fuerza laboral especializada en Deep Tech."
+    }
+];
+
  
 const Block1 = ({ isActive }) => {
   const [data, setData] = useState(null);
@@ -440,91 +463,116 @@ const Block2 = ({ isActive }) => {
 };
  
  
-// --- SLIDE 6 (AI VISION) ---
+
  
-const Block6 = ({ isActive }) => {
-  const [aiData, setAiData] = useState(null);
-  const [step, setStep] = useState(0);
+// --- BLOQUE 6 (NUEVA LÍNEA DE TIEMPO CON EFECTO WOW) ---
+const TimelineItem = ({ data, index }) => {
+    const Icon = data.icon;
+    
+    // Lógica Invertida: HOY (0) y +18 AÑOS (2) a la izquierda. EVOLUCIÓN (1) a la derecha.
+    // isLeft = TRUE para índices pares (0, 2...)
+    const isLeft = index % 2 === 0; 
  
-  // Datos Mock para la visión, ya que no dependen de la DB de respuestas.
-  const MOCK_AI_DATA = {
-    hero: "Impulsar un crecimiento competitivo, digital y sostenible, potenciando la colaboración entre empresas MEGA y el ecosistema de Bogotá.",
-    pillars: [
-      { title: "Innovación & Datos", desc: "Decisiones ágiles basadas en analítica avanzada.", icon: "Brain" },
-      { title: "Talento 4.0", desc: "Capacitación continua en habilidades digitales.", icon: "Users" },
-      { title: "Sostenibilidad", desc: "Eficiencia energética y generación de valor social.", icon: "Globe" },
-      { title: "Ecosistema", desc: "Co-innovación abierta con startups y academia.", icon: "Share2" },
-      { title: "Escalabilidad", desc: "Plataformas estandarizadas para expansión regional.", icon: "Rocket" }
-    ],
-    tags: ["+Productividad", "+Omnicanalidad", "+IA Responsable", "+Ciberseguridad"]
-  };
- 
-  useEffect(() => {
-    if (isActive && !aiData) {
-      setTimeout(() => setStep(1), 1000);
-      // Simula la generación de IA/carga de datos estáticos
-      setTimeout(() => {
-        setAiData(MOCK_AI_DATA);
-        setStep(2);
-      }, 2500);
-    }
-  }, [isActive, aiData]);
- 
-  if (step < 2) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-black text-white">
-        <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
-        <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
-        <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
-          <div className="h-full bg-[#E30613] animate-progress"></div>
-        </div>
-      </div>
-    );
-  }
+        <div 
+            className={`flex w-full mb-6 md:mb-8 animate-slideUp items-start`} // 4. Reducción de margin-bottom: de mb-8 a mb-6
+            style={{ animationDelay: `${index * 300 + 500}ms` }}
+        >
+            
+            {/* Columna de Contenido (Texto de IA) */}
+            <div className={`w-1/2 ${isLeft ? 'pr-4 sm:pr-8' : 'pl-4 sm:pl-8'} ${isLeft ? 'order-1' : 'order-3'}`}>
+                <div className={`bg-white p-4 rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 h-full flex flex-col ${isLeft ? 'text-right border-r-4' : 'text-left border-l-4'} border-[#E30613]`}>
+                    
+                    {/* Título del Período (Alineado con el contenido) */}
+                    <h3 className={`text-xl md:text-xl font-bold text-[#E30613] mb-2 ${isLeft ? 'self-end' : 'self-start'}`}>
+                        {data.period}
+                    </h3>
  
-  return (
-    <div className="h-full flex flex-col p-8 bg-gradient-to-b from-white to-gray-50 animate-fadeIn">
-      <div className="flex justify-between items-start mb-6">
-        <div className="bg-black text-white px-3 py-1 text-xs font-bold rounded uppercase tracking-widest flex items-center gap-2">
-          <Zap size={12} className="text-yellow-400" /> Generado
-        </div>
-      </div>
-      <div className="text-center max-w-4xl mx-auto mb-12 animate-slideUp">
-        <h1 className="text-3xl md:text-4xl font-serif italic text-[#BA0C2F] leading-relaxed mb-6 relative">
-          <span className="text-6xl absolute -top-4 -left-8 text-gray-200">“</span>
-          {aiData.hero}
-          <span className="text-6xl absolute -bottom-8 -right-8 text-gray-200">”</span>
-        </h1>
-        <div className="flex justify-center gap-3 flex-wrap mt-4">
-          {aiData.tags.map((tag, i) => (
-            <span key={i} className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-semibold animate-fadeIn" style={{animationDelay: `${i*200}ms`}}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {aiData.pillars.map((pillar, idx) => {
-           const Icon = pillar.icon === 'Brain' ? Brain : pillar.icon === 'Users' ? Users : pillar.icon === 'Globe' ? Globe : pillar.icon === 'Share2' ? Share2 : Rocket;
-           return (
-            <div
-              key={idx}
-              className="bg-white p-4 rounded-xl shadow-md border-t-4 border-[#E30613] hover:-translate-y-2 transition-transform duration-300 animate-slideUp"
-              style={{ animationDelay: `${idx * 150 + 500}ms`, animationFillMode: 'backwards' }}
-            >
-              <div className="bg-red-50 w-12 h-12 rounded-full flex items-center justify-center mb-3 text-[#E30613]">
-                <Icon size={24} />
-              </div>
-              <h3 className="font-bold text-lg mb-2 leading-tight">{pillar.title}</h3>
-              <p className="text-sm text-gray-600 leading-snug">{pillar.desc}</p>
+                    {/* Descripción de IA */}
+                    <p className="text-sm md:text-base font-medium text-gray-800 italic leading-relaxed whitespace-pre-line flex-1">
+                        {data.description}
+                    </p>
+                    
+                    {/* Énfasis en la generación por IA */}
+                    <span className={`inline-flex items-center mt-2 text-xs font-semibold text-[#BA0C2F] bg-red-50 px-2 py-0.5 rounded-full ${isLeft ? 'self-end' : 'self-start'}`}>
+                        <Brain size={10} className="mr-1" />
+                        Síntesis de IA
+                    </span>
+                </div>
             </div>
-           )
-        })}
-      </div>
-    </div>
-  );
+ 
+            {/* Línea de Tiempo y Nodo Central (Fijo en el centro) */}
+            <div className="w-8 flex flex-col items-center order-2">
+                {/* Círculo del Nodo */}
+                <div className="relative z-10 w-6 h-6 rounded-full bg-[#E30613] flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform duration-300">
+                    <Icon size={14} className="text-white" />
+                </div>
+            </div>
+
+            {/* Columna de Espaciado (Vacío) - solo se usa para forzar el layout */}
+            <div className={`w-1/2 ${isLeft ? 'order-3' : 'order-1'}`}>
+                {/* Este div está vacío, pero su orden asegura que la caja de contenido ocupe el lado correcto */}
+            </div>
+            
+        </div>
+    );
 };
  
+const Block6 = ({ isActive }) => {
+    const [loading, setLoading] = useState(true);
+ 
+    useEffect(() => {
+        if (isActive) {
+            // Simula el tiempo de procesamiento y síntesis de la IA
+            const timer = setTimeout(() => {
+                setLoading(false);
+            }, 3000); // 3 segundos para el "WOW" effect
+            return () => clearTimeout(timer);
+        } else {
+            setLoading(true); // Reinicia si el slide no está activo para el próximo uso
+        }
+    }, [isActive]);
+ 
+    if (loading) {
+        // Usa el LoadingOverlay para el efecto "WOW" de análisis de IA
+        return (
+            <div className="h-full relative flex items-center justify-center bg-gray-900">
+                <LoadingOverlay />
+            </div>
+        );
+    }
+ 
+    return (
+        <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> {/* 1. pt-4/pt-6 para subir el contenido */}
+            
+            {/* 1. Título Eliminado */}
+            
+            {/* Contenedor de la Línea de Tiempo */}
+            <div className="flex justify-center w-full min-h-[50vh] pb-40"> {/* 2. pb-40 para alargar visualmente la línea */}
+                <div className="relative w-full max-w-6xl pt-4"> 
+                    
+                    {/* La verdadera línea vertical - Centered */}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-gray-200"></div> 
+ 
+                    {AI_TIMELINE_DATA.map((item, index) => (
+                        <TimelineItem key={index} data={item} index={index} />
+                    ))}
+                    
+                    {/* Nota Final de IA */}
+                    <div className="text-center mt-10 p-3 bg-red-50 rounded-lg max-w-md mx-auto shadow-md animate-slideUp" style={{ animationDelay: `${(AI_TIMELINE_DATA.length) * 300 + 500}ms` }}>
+                         <p className="text-xs text-[#BA0C2F] font-semibold"> 
+                            Estos puntos representan la síntesis de la evolución de las respuestas del cuestionario (Hoy vs. 18 Años).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+ 
+ 
+
+
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 4; // Reducido a 3: Intro, Block1, Block2, Block6

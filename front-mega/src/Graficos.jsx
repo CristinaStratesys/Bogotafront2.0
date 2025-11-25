@@ -967,7 +967,7 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
+            margin={{ top: 0, right: 20, left: 20, bottom: 12 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}
@@ -975,7 +975,7 @@ const Block4 = ({ isActive }) => {
               dataKey="name"
               type="category"
               tick={{ fill: "#555", fontSize: 12 }}
-              width={180}
+              width={220}
             />
             {/* eje X: porcentaje */}
             <XAxis

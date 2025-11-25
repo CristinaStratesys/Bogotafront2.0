@@ -700,6 +700,189 @@ const Block3 = ({ isActive }) => {
   );
 };
 
+// ---- SLIDE 4: TECNOLOGÍAS UTILIZADAS ------------------------------
+
+const Block4 = ({ isActive }) => {
+  const [techs, setTechs] = useState(null);
+  const [error, setError] = useState(null);
+  const [emptyMsg, setEmptyMsg] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Solo cargamos una vez cuando el slide se active
+    if (!isActive || techs !== null || loading) return;
+
+    const fetchTechs = async () => {
+      setLoading(true);
+      setError(null);
+      setEmptyMsg(null);
+
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        console.error("[Block4] Faltan VITE_SUPABASE_URL o VITE_SUPABASE_KEY");
+        setError(
+          "Faltan las credenciales de Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_KEY)."
+        );
+        setTechs([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const ENDPOINT_TECHS = `${SUPABASE_URL}/rest/v1/techs`;
+
+        const params = new URLSearchParams({
+          select: "tecnologia,adopcion", // 👈 columnas reales
+        });
+        params.append("order", "adopcion.desc");
+
+        const url = `${ENDPOINT_TECHS}?${params.toString()}`;
+        const headers = {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Accept: "application/json",
+        };
+
+        console.log("▶️ [Block4] Llamando a:", url);
+
+        const response = await fetch(url, { headers });
+        const rawText = await response.text();
+        console.log(
+          "📡 [Block4] Status:",
+          response.status,
+          response.statusText,
+          "Body:",
+          rawText
+        );
+
+        if (!response.ok) {
+          setError(
+            `Error HTTP ${response.status} - ${response.statusText}. Respuesta del servidor: ${rawText || "(sin cuerpo)"}`
+          );
+          setTechs([]);
+          setLoading(false);
+          return;
+        }
+
+        const data = rawText ? JSON.parse(rawText) : [];
+
+        // 🔍 Mapeo sencillo y robusto
+        const mapped = (data || []).map((row) => ({
+          name: row.tecnologia || "",                         // 👈 OBLIGAMOS a usar 'tecnologia'
+          value: parseFloat(row.adopcion ?? 0) || 0,          // en porcentaje
+        }));
+
+        console.log("[Block4] Mapped data:", mapped);
+
+        // si realmente viene vacío
+        if (!mapped.length || !mapped.some((t) => t.name)) {
+          setEmptyMsg("No se encontraron registros en la tabla 'techs'.");
+        }
+
+        setTechs(mapped);
+      } catch (err) {
+        console.error("❌ [Block4] Error cargando tecnologías:", err);
+        setError(
+          `No se pudieron cargar las tecnologías desde la base de datos. Detalle: ${
+            err?.message || String(err)
+          }`
+        );
+        setTechs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTechs();
+  }, [isActive, techs, loading]);
+
+  // --- RENDER ---
+
+  if (loading || techs === null) {
+    return <LoadingOverlay text="Cargando Tecnologías Utilizadas..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage message={error} isError={true} />
+      </div>
+    );
+  }
+
+  // Solo mostramos "sin datos" si de verdad no hay ninguna tecnología con nombre
+  const visibleTechs = (techs || []).filter((t) => t.name);
+
+  if (emptyMsg || !visibleTechs.length) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage
+          message={emptyMsg || "No se encontraron registros en la tabla 'techs'."}
+          isError={false}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col p-8 animate-fadeIn">
+      <SectionTitle
+        title="Tecnologías Utilizadas"
+        subtitle="Porcentaje de empresas que declara usar cada tecnología"
+      />
+
+      <Card className="flex-1 p-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={visibleTechs}
+            layout="vertical"
+            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            {/* eje Y: nombre de la tecnología */}
+            <YAxis
+              dataKey="name"
+              type="category"
+              tick={{ fill: "#555", fontSize: 12 }}
+              width={180}
+            />
+            {/* eje X: porcentaje */}
+            <XAxis
+              type="number"
+              domain={[0, "dataMax + 5"]}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <RechartsTooltip
+              formatter={(value) => [`${value}%`, "Adopción"]}
+              labelFormatter={(label) => label}
+              contentStyle={{
+                borderRadius: "8px",
+                border: "none",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              }}
+            />
+            <Bar
+              dataKey="value"
+              fill={PALETTE.primary}
+              barSize={24}
+              radius={[4, 4, 4, 4]}
+              // etiqueta al final de cada barra, como en el mock
+              label={({ x, y, width, value }) => (
+                <text
+                  x={x + width + 8}
+                  y={y + 14}
+                  fill="#444"
+                  fontSize={12}
+                >
+                  {`${value}%`}
+                </text>
+              )}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
 
 
 // --- SLIDE 5 (NUBE DE PALABRAS)
@@ -823,7 +1006,12 @@ const Block5 = ({ isActive }) => {
     );
   }
 
-  // Nube de palabras OK
+  // Calcular min y max para escalar tamaños
+  const maxValue = Math.max(...words.map((w) => w.value));
+  const minValue = Math.min(...words.map((w) => w.value));
+  const minFont = 16; // px
+  const maxFont = 60; // px (más grande que antes para que destaque más)
+
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
       <SectionTitle
@@ -831,13 +1019,18 @@ const Block5 = ({ isActive }) => {
         subtitle="Palabras más usadas en la encuesta"
       />
 
+      {/* overflow-auto para que nunca corte palabras, sin el texto de pie de página */}
       <Card className="flex-1 relative flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
         <div className="flex flex-wrap justify-center items-center content-center gap-4 max-w-5xl p-10">
           {words.map((word, i) => {
-            // Normalizamos tamaño: mínimo 16px, máximo 48px
-            const rawSize = word.value / 1.5;
-            const fontSize = Math.min(48, Math.max(16, rawSize));
-            const opacity = Math.max(0.4, Math.min(1, word.value / 100));
+            // normalizamos 0..1 según frecuencia
+            const range = Math.max(1, maxValue - minValue);
+            const norm = (word.value - minValue) / range;
+
+            // tamaño entre minFont y maxFont, con más contraste
+            const fontSize = minFont + norm * (maxFont - minFont);
+            const opacity = 0.3 + norm * 0.7; // entre 0.3 y 1
+
             const color =
               i % 3 === 0
                 ? PALETTE.primary
@@ -860,9 +1053,6 @@ const Block5 = ({ isActive }) => {
               </span>
             );
           })}
-        </div>
-        <div className="absolute bottom-4 right-4 text-xs text-gray-400">
-          * Datos obtenidos de la tabla <strong>nube_palabras</strong> en Supabase
         </div>
       </Card>
     </div>
@@ -986,7 +1176,7 @@ const Block6 = ({ isActive }) => {
 
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 6; // Reducido a 3: Intro, Block1, Block2, Block6
+  const totalSlides = 7; // Reducido a 3: Intro, Block1, Block2, Block6
  
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -1024,8 +1214,9 @@ export default function DashboardApp() {
         {currentSlide === 1 && <Block1 isActive={true} />}
         {currentSlide === 2 && <Block2 isActive={true} />}
         {currentSlide === 3 && <Block3 isActive={true} />}
-        {currentSlide === 4 && <Block5 isActive={true} />}
-        {currentSlide === 5 && <Block6 isActive={true} />}
+        {currentSlide === 4 && <Block4 isActive={true} />}
+        {currentSlide === 5 && <Block5 isActive={true} />}
+        {currentSlide === 6 && <Block6 isActive={true} />}
       </main>
  
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

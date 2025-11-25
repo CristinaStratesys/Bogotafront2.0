@@ -61,6 +61,16 @@ const PALETTE = {
     'Avanzado': '#0E3A63'
   }
 };
+// Orden fijo para las categorías de empleados (leyenda y donut)
+const EMPLOYEE_ORDER = ["1-50", "51-200", "201-500", ">500"];
+
+// Colores fijos por categoría de empleados (SIN tipos TS)
+const EMPLOYEE_COLORS = {
+  "1-50": "#E30613",   // rojo
+  "201-500": "#5CA6D1",// azul claro
+  "51-200": "#0E3A63", // azul oscuro
+  ">500": "#F4C542",   // amarillo
+};
  
 // --- DATA SERVICE (SUPABASE ONLY) ---
 const DataService = {
@@ -236,16 +246,19 @@ const DataService = {
     });
 
     // --- Treemap por industria ---
-    const treemapData = Object.keys(sectors).map((key) => ({
-      name: key,
-      size: sectors[key],
-      fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
-    }));
+  let treemapData = Object.keys(sectors).map((key) => ({
+    name: key,
+    size: sectors[key],
+    fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
+  }));
+
+  // ORDENAR POR TAMAÑO (MAYOR → MENOR)
+  treemapData.sort((a, b) => b.size - a.size);
 
     // --- Distribución por empleados ---
-    const employeeData = Object.keys(employeesGroups).map((key) => ({
+    const employeeData = EMPLOYEE_ORDER.map((key) => ({
       name: key,
-      value: employeesGroups[key],
+      value: employeesGroups[key] || 0,
     }));
 
     // --- Adopción tecnológica por industria (porcentajes) ---
@@ -440,7 +453,11 @@ const Block1 = ({ isActive }) => {
  
   // En un escenario real, deberías tener lógica de filtrado de empleados por sector aquí.
   // Como no tenemos datos mock/real para esa complejidad, usamos el total.
-  const displayedEmployees = data.employees.total;
+// En Block1, FUERZA el orden fijo del donut:
+const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
+  const found = data.employees.total.find((e) => e.name === name);
+  return found || { name, value: 0 };
+});
  
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
@@ -458,7 +475,12 @@ const Block1 = ({ isActive }) => {
           <div className="flex-1 relative">
              <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-1">
                 {data.treemap.map((item, idx) => {
-                  const spanClass = idx === 0 ? "col-span-2 row-span-2" : idx === 1 ? "col-span-2 row-span-1" : "col-span-1 row-span-1";
+                  const spanClass =
+                    idx === 0
+                      ? "col-span-2 row-span-2"    // MÁS grande
+                      : idx <= 2
+                      ? "col-span-2 row-span-1"    // medianos
+                      : "col-span-1 row-span-1";   // pequeños
                   const isSelected = filter === item.name; // Lógica de filtrado de ejemplo
                   return (
                     <div
@@ -483,7 +505,7 @@ const Block1 = ({ isActive }) => {
             <Users size={20} className="text-[#E30613]" />
             Distribución por Número de Empleados
           </h3>
-          <div className="flex-1 min-h-[300px]">
+          <div className="flex-1 min-h-[300px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -494,15 +516,59 @@ const Block1 = ({ isActive }) => {
                   outerRadius={120}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name}`}
+                  label={({ name }) => `${name}`}
                   labelLine={false}
+                  startAngle={90}    // empieza arriba
+                  endAngle={-270}    // gira en sentido horario
                 >
-                  {displayedEmployees.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={Object.values(PALETTE.industries)[index % 8]} />
+                  {displayedEmployees.map((entry) => (
+                    <Cell
+                      key={`cell-${entry.name}`}
+                      fill={EMPLOYEE_COLORS[entry.name]}
+                    />
                   ))}
                 </Pie>
                 <RechartsTooltip />
-                <Legend layout="vertical" verticalAlign="middle" align="right" />
+                <Legend
+                  verticalAlign="middle"
+                  align="right"
+                  layout="vertical"
+                  content={() => (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        marginLeft: 16,
+                      }}
+                    >
+                      {EMPLOYEE_ORDER.map((name) => (
+                        <div
+                          key={name}
+                          style={{ display: "flex", alignItems: "center", gap: 8 }}
+                        >
+                          <span
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              backgroundColor: EMPLOYEE_COLORS[name],
+                            }}
+                          />
+                          <span
+                            style={{
+                              color: EMPLOYEE_COLORS[name],
+                              fontWeight: 600,
+                            }}
+                          >
+                            {name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                />
+
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -567,32 +633,42 @@ const Block2 = ({ isActive }) => {
               cursor={{ fill: 'transparent' }}
             />
             <Legend
-                verticalAlign="top"
-                height={60}
-                content={() => (
-                  <div style={{ display: 'flex', gap: '20px', paddingLeft: '40px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
-                      Bajo
-                    </span>
+              verticalAlign="top"
+              height={70}
+              content={() => (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",   // CENTRA TODO
+                    alignItems: "center",
+                    gap: "35px",
+                    width: "100%",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
+                    Bajo
+                  </span>
 
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
-                      Medio
-                    </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
+                    Medio
+                  </span>
 
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
-                      Alto
-                    </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
+                    Alto
+                  </span>
 
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
-                      Avanzado
-                    </span>
-                  </div>
-                )}
-              />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
+                    Avanzado
+                  </span>
+                </div>
+              )}
+            />
+
 
 
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (

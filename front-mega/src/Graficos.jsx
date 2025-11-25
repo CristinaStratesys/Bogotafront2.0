@@ -759,7 +759,7 @@ const Block3 = ({ isActive }) => {
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={260} {/*aumentoa el espacio que coge el texto (se ajustatamaño de la grafica) */}
+              width={260}
               tick={{fill: '#666', fontWeight: 600}} 
             /> 
             <RechartsTooltip 

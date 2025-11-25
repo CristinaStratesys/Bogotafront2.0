@@ -61,6 +61,16 @@ const PALETTE = {
     'Avanzado': '#0E3A63'
   }
 };
+// Orden fijo para las categorías de empleados (leyenda y donut)
+const EMPLOYEE_ORDER = ["1-50", "51-200", "201-500", ">500"];
+
+// Colores fijos por categoría de empleados (SIN tipos TS)
+const EMPLOYEE_COLORS = {
+  "1-50": "#E30613",   // rojo
+  "201-500": "#5CA6D1",// azul claro
+  "51-200": "#0E3A63", // azul oscuro
+  ">500": "#F4C542",   // amarillo
+};
  
 // --- DATA SERVICE (SUPABASE ONLY) ---
 const DataService = {
@@ -236,16 +246,19 @@ const DataService = {
     });
 
     // --- Treemap por industria ---
-    const treemapData = Object.keys(sectors).map((key) => ({
-      name: key,
-      size: sectors[key],
-      fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
-    }));
+  let treemapData = Object.keys(sectors).map((key) => ({
+    name: key,
+    size: sectors[key],
+    fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
+  }));
+
+  // ORDENAR POR TAMAÑO (MAYOR → MENOR)
+  treemapData.sort((a, b) => b.size - a.size);
 
     // --- Distribución por empleados ---
-    const employeeData = Object.keys(employeesGroups).map((key) => ({
+    const employeeData = EMPLOYEE_ORDER.map((key) => ({
       name: key,
-      value: employeesGroups[key],
+      value: employeesGroups[key] || 0,
     }));
 
     // --- Adopción tecnológica por industria (porcentajes) ---
@@ -452,7 +465,11 @@ const Block1 = ({ isActive }) => {
  
   // En un escenario real, deberías tener lógica de filtrado de empleados por sector aquí.
   // Como no tenemos datos mock/real para esa complejidad, usamos el total.
-  const displayedEmployees = data.employees.total;
+// En Block1, FUERZA el orden fijo del donut:
+const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
+  const found = data.employees.total.find((e) => e.name === name);
+  return found || { name, value: 0 };
+});
  
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
@@ -470,7 +487,12 @@ const Block1 = ({ isActive }) => {
           <div className="flex-1 relative">
              <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-1">
                 {data.treemap.map((item, idx) => {
-                  const spanClass = idx === 0 ? "col-span-2 row-span-2" : idx === 1 ? "col-span-2 row-span-1" : "col-span-1 row-span-1";
+                  const spanClass =
+                    idx === 0
+                      ? "col-span-2 row-span-2"    // MÁS grande
+                      : idx <= 2
+                      ? "col-span-2 row-span-1"    // medianos
+                      : "col-span-1 row-span-1";   // pequeños
                   const isSelected = filter === item.name; // Lógica de filtrado de ejemplo
                   return (
                     <div
@@ -495,7 +517,7 @@ const Block1 = ({ isActive }) => {
             <Users size={20} className="text-[#E30613]" />
             Distribución por Número de Empleados
           </h3>
-          <div className="flex-1 min-h-[300px]">
+          <div className="flex-1 min-h-[300px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -506,15 +528,59 @@ const Block1 = ({ isActive }) => {
                   outerRadius={120}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name}`}
+                  label={({ name }) => `${name}`}
                   labelLine={false}
+                  startAngle={90}    // empieza arriba
+                  endAngle={-270}    // gira en sentido horario
                 >
-                  {displayedEmployees.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={Object.values(PALETTE.industries)[index % 8]} />
+                  {displayedEmployees.map((entry) => (
+                    <Cell
+                      key={`cell-${entry.name}`}
+                      fill={EMPLOYEE_COLORS[entry.name]}
+                    />
                   ))}
                 </Pie>
                 <RechartsTooltip />
-                <Legend layout="vertical" verticalAlign="middle" align="right" />
+                <Legend
+                  verticalAlign="middle"
+                  align="right"
+                  layout="vertical"
+                  content={() => (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        marginLeft: 16,
+                      }}
+                    >
+                      {EMPLOYEE_ORDER.map((name) => (
+                        <div
+                          key={name}
+                          style={{ display: "flex", alignItems: "center", gap: 8 }}
+                        >
+                          <span
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              backgroundColor: EMPLOYEE_COLORS[name],
+                            }}
+                          />
+                          <span
+                            style={{
+                              color: EMPLOYEE_COLORS[name],
+                              fontWeight: 600,
+                            }}
+                          >
+                            {name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                />
+
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -579,32 +645,42 @@ const Block2 = ({ isActive }) => {
               cursor={{ fill: 'transparent' }}
             />
             <Legend
-                verticalAlign="top"
-                height={60}
-                content={() => (
-                  <div style={{ display: 'flex', gap: '20px', paddingLeft: '40px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
-                      Bajo
-                    </span>
+              verticalAlign="top"
+              height={70}
+              content={() => (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",   // CENTRA TODO
+                    alignItems: "center",
+                    gap: "35px",
+                    width: "100%",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
+                    Bajo
+                  </span>
 
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
-                      Medio
-                    </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
+                    Medio
+                  </span>
 
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
-                      Alto
-                    </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
+                    Alto
+                  </span>
 
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
-                      Avanzado
-                    </span>
-                  </div>
-                )}
-              />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
+                    Avanzado
+                  </span>
+                </div>
+              )}
+            />
+
 
 
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
@@ -672,13 +748,22 @@ const Block3 = ({ isActive }) => {
     return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
   }
 
+  // Forzar orden y colores en la leyenda (mismo orden que Block2)
+  const LEGEND_ORDER = ['Bajo', 'Medio', 'Alto', 'Avanzado'];
+  const legendPayload = LEGEND_ORDER.map((key) => ({
+    value: key,
+    type: 'square',
+    id: key,
+    color: PALETTE.levels[key],
+  }));
+
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
       <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}> {/* mueve los limites que tiene la grafica*/}
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* Eje X (Horizontal) para los valores porcentuales */}
             <XAxis type="number" unit="%" /> 
@@ -686,14 +771,49 @@ const Block3 = ({ isActive }) => {
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={100} 
+              width={260}
               tick={{fill: '#666', fontWeight: 600}} 
             /> 
             <RechartsTooltip 
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
             />
-            <Legend verticalAlign="top" height={36}/>
+            <Legend
+              verticalAlign="top"
+              height={70}
+              content={() => (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "35px",
+                    width: "100%",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
+                    Bajo
+                  </span>
+
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
+                    Medio
+                  </span>
+
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
+                    Alto
+                  </span>
+
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
+                    Avanzado
+                  </span>
+                </div>
+              )}
+            />
             {/* Barras apiladas representando los niveles de adopción */}
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
               <Bar 
@@ -712,6 +832,189 @@ const Block3 = ({ isActive }) => {
   );
 };
 
+// ---- SLIDE 4: TECNOLOGÍAS UTILIZADAS ------------------------------
+
+const Block4 = ({ isActive }) => {
+  const [techs, setTechs] = useState(null);
+  const [error, setError] = useState(null);
+  const [emptyMsg, setEmptyMsg] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Solo cargamos una vez cuando el slide se active
+    if (!isActive || techs !== null || loading) return;
+
+    const fetchTechs = async () => {
+      setLoading(true);
+      setError(null);
+      setEmptyMsg(null);
+
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        console.error("[Block4] Faltan VITE_SUPABASE_URL o VITE_SUPABASE_KEY");
+        setError(
+          "Faltan las credenciales de Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_KEY)."
+        );
+        setTechs([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const ENDPOINT_TECHS = `${SUPABASE_URL}/rest/v1/techs`;
+
+        const params = new URLSearchParams({
+          select: "tecnologia,adopcion", // 👈 columnas reales
+        });
+        params.append("order", "adopcion.desc");
+
+        const url = `${ENDPOINT_TECHS}?${params.toString()}`;
+        const headers = {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Accept: "application/json",
+        };
+
+        console.log("▶️ [Block4] Llamando a:", url);
+
+        const response = await fetch(url, { headers });
+        const rawText = await response.text();
+        console.log(
+          "📡 [Block4] Status:",
+          response.status,
+          response.statusText,
+          "Body:",
+          rawText
+        );
+
+        if (!response.ok) {
+          setError(
+            `Error HTTP ${response.status} - ${response.statusText}. Respuesta del servidor: ${rawText || "(sin cuerpo)"}`
+          );
+          setTechs([]);
+          setLoading(false);
+          return;
+        }
+
+        const data = rawText ? JSON.parse(rawText) : [];
+
+        // 🔍 Mapeo sencillo y robusto
+        const mapped = (data || []).map((row) => ({
+          name: row.tecnologia || "",                         // 👈 OBLIGAMOS a usar 'tecnologia'
+          value: parseFloat(row.adopcion ?? 0) || 0,          // en porcentaje
+        }));
+
+        console.log("[Block4] Mapped data:", mapped);
+
+        // si realmente viene vacío
+        if (!mapped.length || !mapped.some((t) => t.name)) {
+          setEmptyMsg("No se encontraron registros en la tabla 'techs'.");
+        }
+
+        setTechs(mapped);
+      } catch (err) {
+        console.error("❌ [Block4] Error cargando tecnologías:", err);
+        setError(
+          `No se pudieron cargar las tecnologías desde la base de datos. Detalle: ${
+            err?.message || String(err)
+          }`
+        );
+        setTechs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTechs();
+  }, [isActive, techs, loading]);
+
+  // --- RENDER ---
+
+  if (loading || techs === null) {
+    return <LoadingOverlay text="Cargando Tecnologías Utilizadas..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage message={error} isError={true} />
+      </div>
+    );
+  }
+
+  // Solo mostramos "sin datos" si de verdad no hay ninguna tecnología con nombre
+  const visibleTechs = (techs || []).filter((t) => t.name);
+
+  if (emptyMsg || !visibleTechs.length) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage
+          message={emptyMsg || "No se encontraron registros en la tabla 'techs'."}
+          isError={false}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col p-8 animate-fadeIn">
+      <SectionTitle
+        title="Tecnologías Utilizadas"
+        subtitle="Porcentaje de empresas que declara usar cada tecnología"
+      />
+
+      <Card className="flex-1 p-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={visibleTechs}
+            layout="vertical"
+            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            {/* eje Y: nombre de la tecnología */}
+            <YAxis
+              dataKey="name"
+              type="category"
+              tick={{ fill: "#555", fontSize: 12 }}
+              width={180}
+            />
+            {/* eje X: porcentaje */}
+            <XAxis
+              type="number"
+              domain={[0, "dataMax + 5"]}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <RechartsTooltip
+              formatter={(value) => [`${value}%`, "Adopción"]}
+              labelFormatter={(label) => label}
+              contentStyle={{
+                borderRadius: "8px",
+                border: "none",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              }}
+            />
+            <Bar
+              dataKey="value"
+              fill={PALETTE.primary}
+              barSize={24}
+              radius={[4, 4, 4, 4]}
+              // etiqueta al final de cada barra, como en el mock
+              label={({ x, y, width, value }) => (
+                <text
+                  x={x + width + 8}
+                  y={y + 14}
+                  fill="#444"
+                  fontSize={12}
+                >
+                  {`${value}%`}
+                </text>
+              )}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
 
 
 // --- SLIDE 5 (NUBE DE PALABRAS)
@@ -835,7 +1138,12 @@ const Block5 = ({ isActive }) => {
     );
   }
 
-  // Nube de palabras OK
+  // Calcular min y max para escalar tamaños
+  const maxValue = Math.max(...words.map((w) => w.value));
+  const minValue = Math.min(...words.map((w) => w.value));
+  const minFont = 16; // px
+  const maxFont = 60; // px (más grande que antes para que destaque más)
+
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
       <SectionTitle
@@ -843,13 +1151,18 @@ const Block5 = ({ isActive }) => {
         subtitle="Palabras más usadas en la encuesta"
       />
 
+      {/* overflow-auto para que nunca corte palabras, sin el texto de pie de página */}
       <Card className="flex-1 relative flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
         <div className="flex flex-wrap justify-center items-center content-center gap-4 max-w-5xl p-10">
           {words.map((word, i) => {
-            // Normalizamos tamaño: mínimo 16px, máximo 48px
-            const rawSize = word.value / 1.5;
-            const fontSize = Math.min(48, Math.max(16, rawSize));
-            const opacity = Math.max(0.4, Math.min(1, word.value / 100));
+            // normalizamos 0..1 según frecuencia
+            const range = Math.max(1, maxValue - minValue);
+            const norm = (word.value - minValue) / range;
+
+            // tamaño entre minFont y maxFont, con más contraste
+            const fontSize = minFont + norm * (maxFont - minFont);
+            const opacity = 0.3 + norm * 0.7; // entre 0.3 y 1
+
             const color =
               i % 3 === 0
                 ? PALETTE.primary
@@ -872,9 +1185,6 @@ const Block5 = ({ isActive }) => {
               </span>
             );
           })}
-        </div>
-        <div className="absolute bottom-4 right-4 text-xs text-gray-400">
-          * Datos obtenidos de la tabla <strong>nube_palabras</strong> en Supabase
         </div>
       </Card>
     </div>
@@ -1096,7 +1406,7 @@ const Block6 = ({ isActive }) => {
 
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 6; // Reducido a 3: Intro, Block1, Block2, Block6
+  const totalSlides = 7; // Reducido a 3: Intro, Block1, Block2, Block6
  
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -1134,8 +1444,9 @@ export default function DashboardApp() {
         {currentSlide === 1 && <Block1 isActive={true} />}
         {currentSlide === 2 && <Block2 isActive={true} />}
         {currentSlide === 3 && <Block3 isActive={true} />}
-        {currentSlide === 4 && <Block5 isActive={true} />}
-        {currentSlide === 5 && <Block6 isActive={true} />}
+        {currentSlide === 4 && <Block4 isActive={true} />}
+        {currentSlide === 5 && <Block5 isActive={true} />}
+        {currentSlide === 6 && <Block6 isActive={true} />}
       </main>
  
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

@@ -104,164 +104,195 @@ const DataService = {
     }
   },
  
-  getDistributionData: async () => {
-  const realData = await DataService.fetchFromSupabase();
- 
-  if (realData === null) {
-    return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
-  }
- 
-  if (realData.length === 0) {
-    return { empty: "No se encontraron datos en la tabla.", treemap: [], employees: { total: [] } };
-  }
- 
-  console.log("📡 [Service] Procesando datos...");
- 
- 
-  ///HACER TODOS LOS PROCESAMIENTOS AQUI
-  // Agrupaciones reales  
-  const sectors = {};
-  const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
-  //const techLevels = { 'Bajo - Uso limitado de herramientas tecnológicas básicas': 0, 'Medio - Digitalización de algunos procesos': 0, 'Alto - Automatización, analítica, plataformas integradas': 0, 'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0 };
-  const sectorsTech = {};
-  const sales_vol = {};
- 
- 
-  realData.forEach(row => {
-    // Procesar industrias
-        // --- Normalización y mapeo de industrias ---
-    const industriaRaw = row.industria
-      ? row.industria.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
-      : "otra";
+    getDistributionData: async () => {
+    const realData = await DataService.fetchFromSupabase();
 
+    if (realData === null) {
+      return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
+    }
+
+    if (realData.length === 0) {
+      return { empty: "No se encontraron datos en la tabla.", treemap: [], employees: { total: [] } };
+    }
+
+    console.log("📡 [Service] Procesando datos...");
+
+    // --- Estructuras de acumulación ---
+    const sectors = {}; // Empresas por industria
+    const employeesGroups = {
+      "1-50": 0,
+      "51-200": 0,
+      "201-500": 0,
+      ">500": 0,
+    };
+    const sectorsTech = {}; // Adopción por industria
+    const salesVol = {};    // Adopción por volumen de ventas
+
+    // --- Diccionario de industrias (sin tildes -> canonical) ---
     const INDUSTRY_MAP = {
-      "agroindustria": "Agroindustria",
-      "manufactura": "Manufactura",
-      "comercio": "Comercio",
-      "tecnologia": "Tecnología",
-      "construccion": "Construcción",
+      agroindustria: "Agroindustria",
+      manufactura: "Manufactura",
+      comercio: "Comercio",
+      tecnologia: "Tecnología",
+      construccion: "Construcción",
       "energia y mineria": "Energía y Minería",
-      "servicios": "Servicios",
-      "servicio": "Servicios",
-      "salud": "Salud",
-      "otra": "Otra",
-      "otros": "Otra"
+      servicios: "Servicios",
+      servicio: "Servicios",
+      salud: "Salud",
+      otra: "Otra",
+      otros: "Otra",
     };
 
-    // Industria estandarizada final
-    const industria = INDUSTRY_MAP[industriaRaw] || "Otra";
+    // --- Claves canónicas de adopción tecnológica ---
+    const ADOPTION_KEYS = {
+      BAJO: "Bajo - Uso limitado de herramientas tecnologicas basicas",
+      MEDIO: "Medio - Digitalizacion de algunos procesos",
+      ALTO: "Alto - Automatizacion, analitica, plataformas integradas",
+      AVANZADO: "Avanzado - Uso intensivo de tecnologias emergentes, IA, IoT, etc.",
+    };
 
-    // Contar empresas por industria
-    sectors[industria] = (sectors[industria] || 0) + 1;
+    const ALL_ADOPTION_KEYS = [
+      ADOPTION_KEYS.BAJO,
+      ADOPTION_KEYS.MEDIO,
+      ADOPTION_KEYS.ALTO,
+      ADOPTION_KEYS.AVANZADO,
+    ];
 
-    // Asegurar estructura para niveles tecnológicos
-    if (!sectorsTech[industria]) {
-      sectorsTech[industria] = {
-        'Bajo - Uso limitado de herramientas tecnologicas basicas': 0,
-        'Medio - Digitalizacion de algunos procesos': 0,
-        'Alto - Automatizacion, analitica, plataformas integradas': 0,
-        'Avanzado - Uso intensivo de tecnologias emergentes, IA, IoT, etc.': 0
-      };
-    }
+    const initAdoptionObject = () => ({
+      [ADOPTION_KEYS.BAJO]: 0,
+      [ADOPTION_KEYS.MEDIO]: 0,
+      [ADOPTION_KEYS.ALTO]: 0,
+      [ADOPTION_KEYS.AVANZADO]: 0,
+    });
 
-    // Nivel de adopción
-    let adopcion_tech = row.adopcion_tech?.trim() || 'Bajo - Uso limitado de herramientas tecnologicas basicas';
+    // --- Loop principal sobre las filas reales ---
+    realData.forEach((row) => {
+      // 1) INDUSTRIA
+      const industriaRaw = row.industria
+        ? row.industria.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
+        : "otra";
 
-adopcion_tech = adopcion_tech
-  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-  .replace(/\s+/g, " ")
-  .trim();
+      const industria = INDUSTRY_MAP[industriaRaw] || "Otra";
 
+      // Contar empresas por industria
+      sectors[industria] = (sectors[industria] || 0) + 1;
 
-    // Incrementar nivel
-    if (sectorsTech[industria][adopcion_tech] !== undefined) {
-  sectorsTech[industria][adopcion_tech] += 1;
-}
+      // Asegurar estructura de adopción por industria
+      if (!sectorsTech[industria]) {
+        sectorsTech[industria] = initAdoptionObject();
+      }
 
-
-    // Procesar número de empleados
-    const numEmpleados = row.empleados || '1-50';
-    employeesGroups[numEmpleados] = employeesGroups[numEmpleados] || 0;
-     if (employeesGroups.hasOwnProperty(numEmpleados)) {
+      // 2) EMPLEADOS
+      const numEmpleados = row.empleados || "1-50";
+      if (employeesGroups[numEmpleados] === undefined) {
+        employeesGroups[numEmpleados] = 0;
+      }
       employeesGroups[numEmpleados] += 1;
+
+      // 3) ADOPCIÓN TECNOLÓGICA (misma etiqueta que metes en la BD)
+    // Normalizar tildes para comparar correctamente
+    let adopcion = (row.adopcion_tech || ADOPTION_KEYS.BAJO)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+    // Normalizar también las claves para comparar sin tildes
+    const normalizedKeys = ALL_ADOPTION_KEYS.map(k =>
+      k.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    );
+
+    // Buscar índice de la clave canonizada
+    const idx = normalizedKeys.indexOf(adopcion);
+
+    if (idx >= 0) {
+      adopcion = ALL_ADOPTION_KEYS[idx]; // recupera versión original correcta
+    } else {
+      adopcion = ADOPTION_KEYS.BAJO; // fallback
     }
-    // Procesar nivel de adopción tecnológica por industria
- 
-    const adopcion_tech = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
-    if (!sectorsTech[industria]) {
-    sectorsTech[industria] = {
-      'Bajo - Uso limitado de herramientas tecnológicas básicas': 0,
-      'Medio - Digitalización de algunos procesos': 0,
-      'Alto - Automatización, analítica, plataformas integradas': 0,
-      'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
+
+    sectorsTech[industria][adopcion] += 1;
+
+
+      // 4) VOLUMEN DE VENTAS
+      const ventas =
+        row.volumen_ventas && row.volumen_ventas.trim() !== ""
+          ? row.volumen_ventas.trim()
+          : "Otros";
+
+      if (!salesVol[ventas]) {
+        salesVol[ventas] = initAdoptionObject();
+      }
+
+    let adopcionSales = (row.adopcion_tech || ADOPTION_KEYS.BAJO)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+    const salesIdx = normalizedKeys.indexOf(adopcionSales);
+    adopcionSales = salesIdx >= 0 ? ALL_ADOPTION_KEYS[salesIdx] : ADOPTION_KEYS.BAJO;
+
+    salesVol[ventas][adopcionSales] += 1;
+
+    });
+
+    // --- Treemap por industria ---
+    const treemapData = Object.keys(sectors).map((key) => ({
+      name: key,
+      size: sectors[key],
+      fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
+    }));
+
+    // --- Distribución por empleados ---
+    const employeeData = Object.keys(employeesGroups).map((key) => ({
+      name: key,
+      value: employeesGroups[key],
+    }));
+
+    // --- Adopción tecnológica por industria (porcentajes) ---
+    let techAdoptionData = Object.entries(sectorsTech).map(([industry, levels]) => {
+      const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+      return {
+        name: industry,
+        Bajo: total ? (levels[ADOPTION_KEYS.BAJO] / total) * 100 : 0,
+        Medio: total ? (levels[ADOPTION_KEYS.MEDIO] / total) * 100 : 0,
+        Alto: total ? (levels[ADOPTION_KEYS.ALTO] / total) * 100 : 0,
+        Avanzado: total ? (levels[ADOPTION_KEYS.AVANZADO] / total) * 100 : 0,
+      };
+    });
+
+    // Orden alfabético con "Otra" al final
+    techAdoptionData.sort((a, b) => {
+      if (a.name === "Otra") return 1;
+      if (b.name === "Otra") return -1;
+      return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+    });
+
+    // --- Adopción por volumen de ventas (para Block3) ---
+    let salesAdoptionData = Object.entries(salesVol).map(([ventas, levels]) => {
+      const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+      return {
+        name: ventas,
+        Bajo: total ? (levels[ADOPTION_KEYS.BAJO] / total) * 100 : 0,
+        Medio: total ? (levels[ADOPTION_KEYS.MEDIO] / total) * 100 : 0,
+        Alto: total ? (levels[ADOPTION_KEYS.ALTO] / total) * 100 : 0,
+        Avanzado: total ? (levels[ADOPTION_KEYS.AVANZADO] / total) * 100 : 0,
+      };
+    });
+
+    console.log("📡 [Service] Resultado final listo.", {
+      treemapData,
+      employeeData,
+      techAdoptionData,
+      salesAdoptionData,
+    });
+
+    return {
+      treemap: treemapData,
+      employees: { total: employeeData },
+      techAdoption: { total: techAdoptionData },
+      salesAdoption: { total: salesAdoptionData },
     };
-  }
-  // Procesar ventas
-  const ventas = row.volumen_ventas && row.volumen_ventas.trim() !== "" ? row.volumen_ventas : "Otros";
-    sectors[ventas] = (sectors[ventas] || 0) + 1;
-
-  // Procesar adopción tecnológica por volumen de ventas
-const adopcion_tech_sales = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
-    if (!sales_vol[ventas]) {
-    sales_vol[ventas] = {
-      'Bajo - Uso limitado de herramientas tecnológicas básicas': 0,
-      'Medio - Digitalización de algunos procesos': 0,
-      'Alto - Automatización, analítica, plataformas integradas': 0,
-      'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
-    };
-  }
-
-
-  sectorsTech[industria][adopcion_tech] += 1;
-  sales_vol[ventas][adopcion_tech_sales] += 1;
-});
-  const treemapData = Object.keys(sectors).map(key => ({
-    name: key,
-    size: sectors[key],
-    fill: PALETTE.industries[key] || PALETTE.industries['Otra']
-  }));
- 
-  const employeeData = Object.keys(employeesGroups).map(key => ({
-    name: key,
-    value: employeesGroups[key]
-  }));
- 
-  // 1) Construimos los datos de adopción tecnológica por sector
-let techAdoptionData = Object.entries(sectorsTech).map(([industry, levels]) => {
-  const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
-  return {
-    name: industry,
-    Bajo: total ? (levels["Bajo - Uso limitado de herramientas tecnologicas basicas"] / total) * 100 : 0,
-    Medio: total ? (levels["Medio - Digitalizacion de algunos procesos"] / total) * 100 : 0,
-    Alto: total ? (levels["Alto - Automatizacion, analitica, plataformas integradas"] / total) * 100 : 0,
-    Avanzado: total ? (levels["Avanzado - Uso intensivo de tecnologias emergentes, IA, IoT, etc."] / total) * 100 : 0,
-  };
-});
-
-// 2) Ordenamos alfabéticamente, dejando "Otra" siempre al final
-techAdoptionData.sort((a, b) => {
-  if (a.name === "Otra") return 1;      // "Otra" va al final
-  if (b.name === "Otra") return -1;
-  return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
-});
-
-return {
-  treemap: treemapData,
-  employees: { total: employeeData },
-  techAdoption: { total: techAdoptionData }
-};
-
- 
-  console.log("📡 [Service] Resultado final listo.");
- 
-  return {
-    treemap: treemapData,
-    employees: { total: employeeData },
-    techAdoption:{ total: techAdoptionData},
-    salesAdoption:{ total: techAdoptionData_sales}
-  };
-}
- 
+  },
 };
  
 // --- UI COMPONENTS ---

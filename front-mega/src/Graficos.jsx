@@ -736,6 +736,15 @@ const Block3 = ({ isActive }) => {
     return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
   }
 
+  // Forzar orden y colores en la leyenda (mismo orden que Block2)
+  const LEGEND_ORDER = ['Bajo', 'Medio', 'Alto', 'Avanzado'];
+  const legendPayload = LEGEND_ORDER.map((key) => ({
+    value: key,
+    type: 'square',
+    id: key,
+    color: PALETTE.levels[key],
+  }));
+
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
       <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
@@ -757,7 +766,42 @@ const Block3 = ({ isActive }) => {
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
             />
-            <Legend verticalAlign="top" height={36}/>
+            <Legend
+              verticalAlign="top"
+              height={70}
+              content={() => (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "35px",
+                    width: "100%",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
+                    Bajo
+                  </span>
+
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
+                    Medio
+                  </span>
+
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
+                    Alto
+                  </span>
+
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
+                    Avanzado
+                  </span>
+                </div>
+              )}
+            />
             {/* Barras apiladas representando los niveles de adopción */}
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
               <Bar 

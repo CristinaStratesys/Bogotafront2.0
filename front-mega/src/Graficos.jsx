@@ -943,12 +943,16 @@ const Block6 = ({ isActive }) => {
     if (loading) {
         // Usa el LoadingOverlay para el efecto "WOW" de análisis de IA
         return (
-            <div className="h-full relative flex items-center justify-center bg-gray-900">
-                <LoadingOverlay />
-            </div>
+         <div className="h-full flex flex-col items-center justify-center bg-black text-white">
+          <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
+          <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
+          <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
+            <div className="h-full bg-[#E30613] animate-progress"></div>
+          </div>
+         </div>
         );
     }
- 
+
     return (
         <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> {/* 1. pt-4/pt-6 para subir el contenido */}
             

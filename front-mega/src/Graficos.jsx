@@ -124,6 +124,7 @@ const DataService = {
   const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
   //const techLevels = { 'Bajo - Uso limitado de herramientas tecnológicas básicas': 0, 'Medio - Digitalización de algunos procesos': 0, 'Alto - Automatización, analítica, plataformas integradas': 0, 'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0 };
   const sectorsTech = {};
+  const sales_vol = {};
  
  
   realData.forEach(row => {
@@ -137,7 +138,7 @@ const DataService = {
      if (employeesGroups.hasOwnProperty(numEmpleados)) {
       employeesGroups[numEmpleados] += 1;
     }
-    // Procesar nivel de adopción tecnológica
+    // Procesar nivel de adopción tecnológica por industria
  
     const adopcion_tech = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
     if (!sectorsTech[industria]) {
@@ -148,14 +149,25 @@ const DataService = {
       'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
     };
   }
- 
+  // Procesar ventas
+  const ventas = row.volumen_ventas && row.volumen_ventas.trim() !== "" ? row.volumen_ventas : "Otros";
+    sectors[ventas] = (sectors[ventas] || 0) + 1;
+
+  // Procesar adopción tecnológica por volumen de ventas
+const adopcion_tech_sales = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
+    if (!sales_vol[ventas]) {
+    sales_vol[ventas] = {
+      'Bajo - Uso limitado de herramientas tecnológicas básicas': 0,
+      'Medio - Digitalización de algunos procesos': 0,
+      'Alto - Automatización, analítica, plataformas integradas': 0,
+      'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
+    };
+  }
+
+
   sectorsTech[industria][adopcion_tech] += 1;
+  sales_vol[ventas][adopcion_tech_sales] += 1;
 });
-   
- 
- 
- 
- 
   const treemapData = Object.keys(sectors).map(key => ({
     name: key,
     size: sectors[key],
@@ -178,13 +190,26 @@ const DataService = {
     };
   });
  
+
+    // Procesar adopción por volumen de ventas
+    const techAdoptionData_sales = Object.entries(sales_vol).map(([sales, levels]) => {
+    const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+    return {
+      name: sales,
+      Bajo: total ? (levels["Bajo - Uso limitado de herramientas tecnológicas básicas"] / total) * 100 : 0,
+      Medio: total ? (levels["Medio - Digitalización de algunos procesos"] / total) * 100 : 0,
+      Alto: total ? (levels["Alto - Automatización, analítica, plataformas integradas"] / total) * 100 : 0,
+      Avanzado: total ? (levels["Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc."] / total) * 100 : 0,
+    };
+  });
  
   console.log("📡 [Service] Resultado final listo.");
  
   return {
     treemap: treemapData,
     employees: { total: employeeData },
-    techAdoption:{ total: techAdoptionData}
+    techAdoption:{ total: techAdoptionData},
+    salesAdoption:{ total: techAdoptionData_sales}
   };
 }
  
@@ -439,7 +464,94 @@ const Block2 = ({ isActive }) => {
   );
 };
  
- 
+//----SLIDE 3-------------------------------------------------------
+const Block3 = ({ isActive }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Si el slide está activo y aún no hemos cargado los datos.
+    if (isActive && !data) {
+      setLoading(true);
+
+      const loadData = async () => {
+        console.log("▶️ [Block3] Ejecutando getDistributionData() para Ventas/Adopción");
+        try {
+          // La misma función de servicio, ahora procesa los datos de ventas también
+          const result = await DataService.getDistributionData();
+          console.log("📊 [Block3] Resultado recibido:", result);
+          setData(result);
+        } catch (error) {
+          console.error("[Block3] Error al cargar datos:", error);
+          setData({ error: "No se pudo cargar la información de adopción por volumen de ventas." });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadData();
+    }
+  }, [isActive, data]);
+  
+  // Usamos el estado de carga y error del patrón Block1/Block2
+  if (loading || data === null) return <LoadingOverlay text="Correlacionando Ventas..." />;
+
+  if (data.error) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage message={data.error} isError={true} />
+      </div>
+    );
+  }
+
+  // Usamos los datos de salesAdoption que se generan en DataService
+  const salesData = data.salesAdoption.total; 
+
+  if (data.empty || salesData.length === 0) {
+    return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
+  }
+
+  return (
+    <div className="h-full flex flex-col p-8 animate-fadeIn">
+      <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
+      <Card className="flex-1 p-8">
+        <ResponsiveContainer width="100%" height="100%">
+          {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            {/* Eje X (Horizontal) para los valores porcentuales */}
+            <XAxis type="number" unit="%" /> 
+            {/* Eje Y (Vertical) para los rangos de ventas */}
+            <YAxis 
+              dataKey="name" 
+              type="category" 
+              width={100} 
+              tick={{fill: '#666', fontWeight: 600}} 
+            /> 
+            <RechartsTooltip 
+              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+            />
+            <Legend verticalAlign="top" height={36}/>
+            {/* Barras apiladas representando los niveles de adopción */}
+            {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
+              <Bar 
+                key={key} 
+                dataKey={key} 
+                stackId="a" 
+                fill={PALETTE.levels[key]} 
+                barSize={40}
+                animationDuration={1500}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
+
+
 // --- SLIDE 6 (AI VISION) ---
  
 const Block6 = ({ isActive }) => {
@@ -527,7 +639,7 @@ const Block6 = ({ isActive }) => {
  
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 4; // Reducido a 3: Intro, Block1, Block2, Block6
+  const totalSlides = 5 // Reducido a 3: Intro, Block1, Block2, Block6
  
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -559,8 +671,8 @@ export default function DashboardApp() {
         {currentSlide === 0 && <IntroSlide onNext={nextSlide} />}
         {currentSlide === 1 && <Block1 isActive={true} />}
         {currentSlide === 2 && <Block2 isActive={true} />}
-       
-        {currentSlide === 3 && <Block6 isActive={true} />}
+        {currentSlide === 3 && <Block3 isActive={true} />}
+        {currentSlide === 4 && <Block6 isActive={true} />}
       </main>
  
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

@@ -751,7 +751,7 @@ const Block3 = ({ isActive }) => {
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}> {/* mueve los limites que tiene la grafica*/}
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* Eje X (Horizontal) para los valores porcentuales */}
             <XAxis type="number" unit="%" /> 
@@ -759,7 +759,7 @@ const Block3 = ({ isActive }) => {
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={100} 
+              width={260} {/*aumentoa el espacio que coge el texto (se ajustatamaño de la grafica) */}
               tick={{fill: '#666', fontWeight: 600}} 
             /> 
             <RechartsTooltip 

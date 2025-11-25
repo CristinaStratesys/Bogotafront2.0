@@ -924,7 +924,7 @@ const TimelineItem = ({ data, index }) => {
         </div>
     );
 };
- 
+
 const Block6 = ({ isActive }) => {
     const [loading, setLoading] = useState(true);
  
@@ -943,7 +943,7 @@ const Block6 = ({ isActive }) => {
     if (loading) {
         // Usa el LoadingOverlay para el efecto "WOW" de análisis de IA
         return (
-         <div className="h-full flex flex-col items-center justify-center bg-black text-white">
+        <div className="h-full flex flex-col items-center justify-center bg-black text-white">
           <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
           <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
           <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
@@ -952,7 +952,7 @@ const Block6 = ({ isActive }) => {
          </div>
         );
     }
-
+ 
     return (
         <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> {/* 1. pt-4/pt-6 para subir el contenido */}
             
@@ -980,10 +980,6 @@ const Block6 = ({ isActive }) => {
         </div>
     );
 };
- 
- 
-
-
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 6; // Reducido a 3: Intro, Block1, Block2, Block6

@@ -745,8 +745,42 @@ const Block3 = ({ isActive }) => {
   const salesData = data.salesAdoption.total; 
 
   if (data.empty || salesData.length === 0) {
-    return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage
+          message={data.empty || "No hay datos de adopción para rangos de ventas."}
+          isError={false}
+        />
+      </div>
+    );
   }
+
+  // 🔽🔽 ORDEN FORZADO DE LAS BARRAS 🔽🔽
+  const SALES_ORDER = [
+    "Grande",
+    "Mediana (alta)",
+    "Mediana (baja)",
+    "Pequeña",
+  ];
+
+  const normalize = (str = "") =>
+    str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const getOrderIndex = (name = "") => {
+    const cleanName = normalize(name);
+    const idx = SALES_ORDER.findIndex((label) =>
+      cleanName.includes(normalize(label))
+    );
+    return idx === -1 ? SALES_ORDER.length : idx; // los no encontrados al final
+  };
+
+  const orderedSalesData = [...salesData].sort(
+    (a, b) => getOrderIndex(a.name) - getOrderIndex(b.name)
+  );
+  // 🔼🔼 FIN ORDEN FORZADO 🔼🔼
 
   // Forzar orden y colores en la leyenda (mismo orden que Block2)
   const LEGEND_ORDER = ['Bajo', 'Medio', 'Alto', 'Avanzado'];
@@ -759,21 +793,26 @@ const Block3 = ({ isActive }) => {
 
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
-      <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
+      <SectionTitle
+        title="Adopción por Volumen de Ventas"
+        subtitle="Impacto del tamaño de facturación en la madurez tecnológica"
+      />
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}> {/* mueve los limites que tiene la grafica*/}
+          <BarChart
+            layout="vertical"
+            data={orderedSalesData}   
+            margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
+          >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-            {/* Eje X (Horizontal) para los valores porcentuales */}
-            <XAxis type="number" unit="%" /> 
-            {/* Eje Y (Vertical) para los rangos de ventas */}
+            <XAxis type="number" unit="%" />
             <YAxis 
               dataKey="name" 
               type="category" 
               width={260}
-              tick={{fill: '#666', fontWeight: 600}} 
-            /> 
+              tick={{ fill: '#666', fontWeight: 600 }} 
+            />
             <RechartsTooltip 
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
@@ -814,7 +853,6 @@ const Block3 = ({ isActive }) => {
                 </div>
               )}
             />
-            {/* Barras apiladas representando los niveles de adopción */}
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
               <Bar 
                 key={key} 
@@ -967,7 +1005,7 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
+            margin={{ top: 0, right: 20, left: 20, bottom: 12 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}
@@ -975,7 +1013,7 @@ const Block4 = ({ isActive }) => {
               dataKey="name"
               type="category"
               tick={{ fill: "#555", fontSize: 12 }}
-              width={180}
+              width={220}
             />
             {/* eje X: porcentaje */}
             <XAxis

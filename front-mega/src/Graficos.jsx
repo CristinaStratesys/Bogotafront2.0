@@ -104,90 +104,195 @@ const DataService = {
     }
   },
  
-  getDistributionData: async () => {
-  const realData = await DataService.fetchFromSupabase();
- 
-  if (realData === null) {
-    return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
-  }
- 
-  if (realData.length === 0) {
-    return { empty: "No se encontraron datos en la tabla.", treemap: [], employees: { total: [] } };
-  }
- 
-  console.log("📡 [Service] Procesando datos...");
- 
- 
-  ///HACER TODOS LOS PROCESAMIENTOS AQUI
-  // Agrupaciones reales  
-  const sectors = {};
-  const employeesGroups = { '1-50': 0, '51-200': 0, '201-500': 0, '>500': 0 };
-  //const techLevels = { 'Bajo - Uso limitado de herramientas tecnológicas básicas': 0, 'Medio - Digitalización de algunos procesos': 0, 'Alto - Automatización, analítica, plataformas integradas': 0, 'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0 };
-  const sectorsTech = {};
- 
- 
-  realData.forEach(row => {
-    // Procesar industrias
-    const industria = row.industria && row.industria.trim() !== "" ? row.industria : "Otros";
-    sectors[industria] = (sectors[industria] || 0) + 1;
-   
-    // Procesar número de empleados
-    const numEmpleados = row.empleados || '1-50';
-    employeesGroups[numEmpleados] = employeesGroups[numEmpleados] || 0;
-     if (employeesGroups.hasOwnProperty(numEmpleados)) {
-      employeesGroups[numEmpleados] += 1;
+    getDistributionData: async () => {
+    const realData = await DataService.fetchFromSupabase();
+
+    if (realData === null) {
+      return { error: "No se pudo conectar a la base de datos.", treemap: [], employees: { total: [] } };
     }
-    // Procesar nivel de adopción tecnológica
- 
-    const adopcion_tech = row.adopcion_tech || 'Bajo - Uso limitado de herramientas tecnológicas básicas';
-    if (!sectorsTech[industria]) {
-    sectorsTech[industria] = {
-      'Bajo - Uso limitado de herramientas tecnológicas básicas': 0,
-      'Medio - Digitalización de algunos procesos': 0,
-      'Alto - Automatización, analítica, plataformas integradas': 0,
-      'Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc.': 0
+
+    if (realData.length === 0) {
+      return { empty: "No se encontraron datos en la tabla.", treemap: [], employees: { total: [] } };
+    }
+
+    console.log("📡 [Service] Procesando datos...");
+
+    // --- Estructuras de acumulación ---
+    const sectors = {}; // Empresas por industria
+    const employeesGroups = {
+      "1-50": 0,
+      "51-200": 0,
+      "201-500": 0,
+      ">500": 0,
     };
-  }
- 
-  sectorsTech[industria][adopcion_tech] += 1;
-});
-   
- 
- 
- 
- 
-  const treemapData = Object.keys(sectors).map(key => ({
-    name: key,
-    size: sectors[key],
-    fill: PALETTE.industries[key] || PALETTE.industries['Otra']
-  }));
- 
-  const employeeData = Object.keys(employeesGroups).map(key => ({
-    name: key,
-    value: employeesGroups[key]
-  }));
- 
-  const techAdoptionData = Object.entries(sectorsTech).map(([industry, levels]) => {
-    const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+    const sectorsTech = {}; // Adopción por industria
+    const salesVol = {};    // Adopción por volumen de ventas
+
+    // --- Diccionario de industrias (sin tildes -> canonical) ---
+    const INDUSTRY_MAP = {
+      agroindustria: "Agroindustria",
+      manufactura: "Manufactura",
+      comercio: "Comercio",
+      tecnologia: "Tecnología",
+      construccion: "Construcción",
+      "energia y mineria": "Energía y Minería",
+      servicios: "Servicios",
+      servicio: "Servicios",
+      salud: "Salud",
+      otra: "Otra",
+      otros: "Otra",
+    };
+
+    // --- Claves canónicas de adopción tecnológica ---
+    const ADOPTION_KEYS = {
+      BAJO: "Bajo - Uso limitado de herramientas tecnologicas basicas",
+      MEDIO: "Medio - Digitalizacion de algunos procesos",
+      ALTO: "Alto - Automatizacion, analitica, plataformas integradas",
+      AVANZADO: "Avanzado - Uso intensivo de tecnologias emergentes, IA, IoT, etc.",
+    };
+
+    const ALL_ADOPTION_KEYS = [
+      ADOPTION_KEYS.BAJO,
+      ADOPTION_KEYS.MEDIO,
+      ADOPTION_KEYS.ALTO,
+      ADOPTION_KEYS.AVANZADO,
+    ];
+
+    const initAdoptionObject = () => ({
+      [ADOPTION_KEYS.BAJO]: 0,
+      [ADOPTION_KEYS.MEDIO]: 0,
+      [ADOPTION_KEYS.ALTO]: 0,
+      [ADOPTION_KEYS.AVANZADO]: 0,
+    });
+
+    // --- Loop principal sobre las filas reales ---
+    realData.forEach((row) => {
+      // 1) INDUSTRIA
+      const industriaRaw = row.industria
+        ? row.industria.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
+        : "otra";
+
+      const industria = INDUSTRY_MAP[industriaRaw] || "Otra";
+
+      // Contar empresas por industria
+      sectors[industria] = (sectors[industria] || 0) + 1;
+
+      // Asegurar estructura de adopción por industria
+      if (!sectorsTech[industria]) {
+        sectorsTech[industria] = initAdoptionObject();
+      }
+
+      // 2) EMPLEADOS
+      const numEmpleados = row.empleados || "1-50";
+      if (employeesGroups[numEmpleados] === undefined) {
+        employeesGroups[numEmpleados] = 0;
+      }
+      employeesGroups[numEmpleados] += 1;
+
+      // 3) ADOPCIÓN TECNOLÓGICA (misma etiqueta que metes en la BD)
+    // Normalizar tildes para comparar correctamente
+    let adopcion = (row.adopcion_tech || ADOPTION_KEYS.BAJO)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+    // Normalizar también las claves para comparar sin tildes
+    const normalizedKeys = ALL_ADOPTION_KEYS.map(k =>
+      k.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    );
+
+    // Buscar índice de la clave canonizada
+    const idx = normalizedKeys.indexOf(adopcion);
+
+    if (idx >= 0) {
+      adopcion = ALL_ADOPTION_KEYS[idx]; // recupera versión original correcta
+    } else {
+      adopcion = ADOPTION_KEYS.BAJO; // fallback
+    }
+
+    sectorsTech[industria][adopcion] += 1;
+
+
+      // 4) VOLUMEN DE VENTAS
+      const ventas =
+        row.volumen_ventas && row.volumen_ventas.trim() !== ""
+          ? row.volumen_ventas.trim()
+          : "Otros";
+
+      if (!salesVol[ventas]) {
+        salesVol[ventas] = initAdoptionObject();
+      }
+
+    let adopcionSales = (row.adopcion_tech || ADOPTION_KEYS.BAJO)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+    const salesIdx = normalizedKeys.indexOf(adopcionSales);
+    adopcionSales = salesIdx >= 0 ? ALL_ADOPTION_KEYS[salesIdx] : ADOPTION_KEYS.BAJO;
+
+    salesVol[ventas][adopcionSales] += 1;
+
+    });
+
+    // --- Treemap por industria ---
+    const treemapData = Object.keys(sectors).map((key) => ({
+      name: key,
+      size: sectors[key],
+      fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
+    }));
+
+    // --- Distribución por empleados ---
+    const employeeData = Object.keys(employeesGroups).map((key) => ({
+      name: key,
+      value: employeesGroups[key],
+    }));
+
+    // --- Adopción tecnológica por industria (porcentajes) ---
+    let techAdoptionData = Object.entries(sectorsTech).map(([industry, levels]) => {
+      const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+      return {
+        name: industry,
+        Bajo: total ? (levels[ADOPTION_KEYS.BAJO] / total) * 100 : 0,
+        Medio: total ? (levels[ADOPTION_KEYS.MEDIO] / total) * 100 : 0,
+        Alto: total ? (levels[ADOPTION_KEYS.ALTO] / total) * 100 : 0,
+        Avanzado: total ? (levels[ADOPTION_KEYS.AVANZADO] / total) * 100 : 0,
+      };
+    });
+
+    // Orden alfabético con "Otra" al final
+    techAdoptionData.sort((a, b) => {
+      if (a.name === "Otra") return 1;
+      if (b.name === "Otra") return -1;
+      return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+    });
+
+    // --- Adopción por volumen de ventas (para Block3) ---
+    let salesAdoptionData = Object.entries(salesVol).map(([ventas, levels]) => {
+      const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+      return {
+        name: ventas,
+        Bajo: total ? (levels[ADOPTION_KEYS.BAJO] / total) * 100 : 0,
+        Medio: total ? (levels[ADOPTION_KEYS.MEDIO] / total) * 100 : 0,
+        Alto: total ? (levels[ADOPTION_KEYS.ALTO] / total) * 100 : 0,
+        Avanzado: total ? (levels[ADOPTION_KEYS.AVANZADO] / total) * 100 : 0,
+      };
+    });
+
+    console.log("📡 [Service] Resultado final listo.", {
+      treemapData,
+      employeeData,
+      techAdoptionData,
+      salesAdoptionData,
+    });
+
     return {
-      name: industry,
-      Bajo: total ? (levels["Bajo - Uso limitado de herramientas tecnológicas básicas"] / total) * 100 : 0,
-      Medio: total ? (levels["Medio - Digitalización de algunos procesos"] / total) * 100 : 0,
-      Alto: total ? (levels["Alto - Automatización, analítica, plataformas integradas"] / total) * 100 : 0,
-      Avanzado: total ? (levels["Avanzado - Uso intensivo de tecnologías emergentes, IA, IoT, etc."] / total) * 100 : 0,
+      treemap: treemapData,
+      employees: { total: employeeData },
+      techAdoption: { total: techAdoptionData },
+      salesAdoption: { total: salesAdoptionData },
     };
-  });
- 
- 
-  console.log("📡 [Service] Resultado final listo.");
- 
-  return {
-    treemap: treemapData,
-    employees: { total: employeeData },
-    techAdoption:{ total: techAdoptionData}
-  };
-}
- 
+  },
 };
  
 // --- UI COMPONENTS ---
@@ -236,15 +341,27 @@ const IntroSlide = ({ onNext }) => (
   <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-white to-gray-100 text-center p-10 relative overflow-hidden">
     <div className="absolute top-0 left-0 w-full h-2 bg-[#E30613]"></div>
     <div className="animate-slideUp space-y-8 z-10 max-w-4xl">
-      <div className="flex justify-center gap-8 mb-8 opacity-0 animate-fadeIn delay-300" style={{ animationFillMode: 'forwards' }}>
-        <div className="flex flex-col items-end border-r-2 border-gray-300 pr-8">
-          <h3 className="text-3xl font-bold text-[#333]">Cámara de Comercio</h3>
-          <h3 className="text-3xl font-light text-[#E30613]">de Bogotá</h3>
-        </div>
-        <div className="flex flex-col items-start pl-2 justify-center">
-           <h3 className="text-4xl font-bold text-gray-800 tracking-tight">stratesys</h3>
-        </div>
-      </div>
+      <div className="flex justify-center items-center gap-12 mb-8 opacity-0 animate-fadeIn delay-300">
+
+  {/* LOGO CCB */}
+  <img
+    src="/Cámara_de_Comercio_de_Bogotá_logo.png"
+    alt="Cámara de Comercio de Bogotá"
+    className="h-20 object-contain"
+  />
+
+  {/* Separador opcional */}
+  <div className="w-px h-16 bg-gray-300"></div>
+
+  {/* LOGO STRATESYS */}
+  <img
+    src="/Stratesys.png"
+    alt="Stratesys"
+    className="h-16 object-contain"
+  />
+
+</div>
+
       <h1 className="text-6xl font-extrabold text-gray-900 leading-tight drop-shadow-sm">
         Resultados Proyecto <span className="text-[#E30613]">MEGA</span>
       </h1>
@@ -416,16 +533,50 @@ const Block2 = ({ isActive }) => {
           <BarChart data={data.techAdoption.total} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="name" tick={{ fill: '#666' }} />
-            <YAxis unit="%" />
+            <YAxis
+              unit="%"
+              domain={[0, 100]}
+              ticks={[0, 20, 40, 60, 80, 100]}
+              tickFormatter={(value) => `${value}`}
+            />
             <RechartsTooltip
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               cursor={{ fill: 'transparent' }}
             />
-            <Legend verticalAlign="top" height={36} />
+            <Legend
+                verticalAlign="top"
+                height={60}
+                content={() => (
+                  <div style={{ display: 'flex', gap: '20px', paddingLeft: '40px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Bajo'] }}></span>
+                      Bajo
+                    </span>
+
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Medio'] }}></span>
+                      Medio
+                    </span>
+
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Alto'] }}></span>
+                      Alto
+                    </span>
+
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: 12, height: 12, background: PALETTE.levels['Avanzado'] }}></span>
+                      Avanzado
+                    </span>
+                  </div>
+                )}
+              />
+
+
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
               <Bar
                 key={key}
                 dataKey={key}
+                name=""
                 stackId="a"
                 fill={PALETTE.levels[key]}
                 animationDuration={1500}
@@ -438,6 +589,95 @@ const Block2 = ({ isActive }) => {
     </div>
   );
 };
+ 
+//----SLIDE 3-------------------------------------------------------
+const Block3 = ({ isActive }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Si el slide está activo y aún no hemos cargado los datos.
+    if (isActive && !data) {
+      setLoading(true);
+
+      const loadData = async () => {
+        console.log("▶️ [Block3] Ejecutando getDistributionData() para Ventas/Adopción");
+        try {
+          // La misma función de servicio, ahora procesa los datos de ventas también
+          const result = await DataService.getDistributionData();
+          console.log("📊 [Block3] Resultado recibido:", result);
+          setData(result);
+        } catch (error) {
+          console.error("[Block3] Error al cargar datos:", error);
+          setData({ error: "No se pudo cargar la información de adopción por volumen de ventas." });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadData();
+    }
+  }, [isActive, data]);
+  
+  // Usamos el estado de carga y error del patrón Block1/Block2
+  if (loading || data === null) return <LoadingOverlay text="Correlacionando Ventas..." />;
+
+  if (data.error) {
+    return (
+      <div className="p-8 h-full">
+        <NoDataMessage message={data.error} isError={true} />
+      </div>
+    );
+  }
+
+  // Usamos los datos de salesAdoption que se generan en DataService
+  const salesData = data.salesAdoption.total; 
+
+  if (data.empty || salesData.length === 0) {
+    return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
+  }
+
+  return (
+    <div className="h-full flex flex-col p-8 animate-fadeIn">
+      <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
+      <Card className="flex-1 p-8">
+        <ResponsiveContainer width="100%" height="100%">
+          {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            {/* Eje X (Horizontal) para los valores porcentuales */}
+            <XAxis type="number" unit="%" /> 
+            {/* Eje Y (Vertical) para los rangos de ventas */}
+            <YAxis 
+              dataKey="name" 
+              type="category" 
+              width={100} 
+              tick={{fill: '#666', fontWeight: 600}} 
+            /> 
+            <RechartsTooltip 
+              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+            />
+            <Legend verticalAlign="top" height={36}/>
+            {/* Barras apiladas representando los niveles de adopción */}
+            {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
+              <Bar 
+                key={key} 
+                dataKey={key} 
+                stackId="a" 
+                fill={PALETTE.levels[key]} 
+                barSize={40}
+                animationDuration={1500}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
+
+
 
 // --- SLIDE 5 (NUBE DE PALABRAS)
 // --- SLIDE 5 (NUBE DE PALABRAS) ---
@@ -694,7 +934,7 @@ const Block6 = ({ isActive }) => {
  
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 5; // Reducido a 3: Intro, Block1, Block2, Block6
+  const totalSlides = 6; // Reducido a 3: Intro, Block1, Block2, Block6
  
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -711,24 +951,29 @@ export default function DashboardApp() {
   return (
     <div className="w-full h-screen bg-gray-100 flex flex-col font-sans overflow-hidden">
       <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-50">
-        <div className="flex items-center gap-4">
-           <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
-              <div className="w-8 h-8 bg-[#E30613] rounded flex items-center justify-center text-white text-xs">CCB</div>
-              <span className="hidden md:inline">Cámara de Comercio de Bogotá</span>
-           </div>
-        </div>
-        <div className="text-xs text-gray-400">
-          Slide {currentSlide + 1} / {totalSlides}
-        </div>
-      </header>
+  {/* LOGO CÁMARA DE COMERCIO DE BOGOTÁ */}
+  <img
+    src="/Cámara_de_Comercio_de_Bogotá_logo.png"
+    alt="Cámara de Comercio de Bogotá"
+    className="h-10 object-contain"
+  />
+
+  {/* LOGO STRATESYS EN LA DERECHA */}
+  <img
+    src="/Stratesys.png"
+    alt="Stratesys"
+    className="h-8 opacity-90 hover:opacity-100 transition-opacity"
+  />
+</header>
+
  
       <main className="flex-1 relative overflow-hidden">
         {currentSlide === 0 && <IntroSlide onNext={nextSlide} />}
         {currentSlide === 1 && <Block1 isActive={true} />}
         {currentSlide === 2 && <Block2 isActive={true} />}
-        {currentSlide === 3 && <Block5 isActive={true} />}
-       
-        {currentSlide === 4 && <Block6 isActive={true} />}
+        {currentSlide === 3 && <Block3 isActive={true} />}
+        {currentSlide === 4 && <Block5 isActive={true} />}
+        {currentSlide === 5 && <Block6 isActive={true} />}
       </main>
  
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

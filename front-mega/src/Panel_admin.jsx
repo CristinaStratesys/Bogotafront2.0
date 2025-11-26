@@ -266,7 +266,7 @@ const App = () => {
  
       {/* FOOTER */}
       <footer className="text-center p-4 text-xs text-gray-400 bg-[#F9F9F9] w-full mt-auto">
-        &copy; 2024 CCB & Stratesys - Event Technology
+        &copy; 2025 CCB & Stratesys - Event Technology
       </footer>
     </div>
   );

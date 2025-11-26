@@ -395,11 +395,8 @@ const IntroSlide = ({ onNext }) => (
 </div>
 
       <h1 className="text-6xl font-extrabold text-gray-900 leading-tight drop-shadow-sm">
-        Resultados Proyecto <span className="text-[#E30613]">MEGA</span>
+        III Encuentro Nacional de Empresas en <span className="text-[#E30613]">Trayectoria MEGA</span>
       </h1>
-      <h2 className="text-3xl text-gray-600 font-light">
-        Encuesta de Visión Empresarial 2025
-      </h2>
       <div className="pt-12">
         <button
           onClick={onNext}

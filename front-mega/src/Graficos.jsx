@@ -775,15 +775,21 @@ salesData.sort((a, b) => {
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 45, left: 25, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* Eje X (Horizontal) para los valores porcentuales */}
-            <XAxis type="number" unit="%" /> 
+            <XAxis
+              type="number"
+              domain={[0, 100]}                // ⬅ forzamos 0–100
+              ticks={[0, 25, 50, 75, 100]}     // ⬅ mismas marcas pero sin 120
+              tickFormatter={(v) => `${v}%`}   // ⬅ añadimos el símbolo %
+            />
+ 
             {/* Eje Y (Vertical) para los rangos de ventas */}
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={200} 
+              width={300} 
               tick={{fill: '#666', fontWeight: 600}} 
             /> 
             <RechartsTooltip 
@@ -977,7 +983,7 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
+            margin={{ top: 20, right: 50, left: 40, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}

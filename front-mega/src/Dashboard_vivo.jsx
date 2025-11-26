@@ -193,7 +193,12 @@ const FeedItem = ({ item }) => (
 
 
       <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-        {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {new Intl.DateTimeFormat("es-CO", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Bogota"
+        }).format(item.timestamp)}
+
       </span>
     </div>
     <p className="text-gray-600 text-sm leading-relaxed">

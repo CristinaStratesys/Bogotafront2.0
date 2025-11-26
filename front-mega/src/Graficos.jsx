@@ -68,8 +68,8 @@ const EMPLOYEE_ORDER = ["1-50", "51-200", "201-500", ">500"];
 // Colores fijos por categoría de empleados (SIN tipos TS)
 const EMPLOYEE_COLORS = {
   "1-50": "#E30613",   // rojo
-  "201-500": "#5CA6D1",// azul claro
   "51-200": "#0E3A63", // azul oscuro
+  "201-500": "#5CA6D1",// azul claro
   ">500": "#F4C542",   // amarillo
 };
  
@@ -413,27 +413,27 @@ const IntroSlide = ({ onNext }) => (
   </div>
 );
 
-// // --- NUEVA ESTRUCTURA DE DATOS MOCK PARA IA ---
-// const AI_TIMELINE_DATA = [
-//     {
-//         period: "HOY (2025)", // Título fijo
-//         icon: Clock, // Icono fijo
-//         theme: "Foco en la Resiliencia",
-//         description: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica** para asegurar la estabilidad del flujo de caja y mantener la competitividad en mercados volátiles."
-//     },
-//     {
-//         period: "EVOLUCIÓN", // Título fijo
-//         icon: TrendingUp, // Icono fijo
-//         theme: "La Brecha Estratégica",
-//         description: "La **transición** crítica exige pasar de la eficiencia (estandarización) a la creación de valor mediante la **innovación continua**, la construcción de una sólida gobernanza de datos y el desarrollo de nuevos liderazgos."
-//     },
-//     {
-//         period: "+18 AÑOS (2043)", // Título fijo
-//         icon: Rocket, // Icono fijo
-//         theme: "Visión de Liderazgo Global",
-//         description: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva, modelos de negocio regenerativos basados en la economía circular y una fuerza laboral especializada en Deep Tech."
-//     }
-// ];
+// --- NUEVA ESTRUCTURA DE DATOS MOCK PARA IA ---
+const AI_TIMELINE_DATA = [
+    {
+        period: "HOY (2025)", // Título fijo
+        icon: Clock, // Icono fijo
+        theme: "Foco en la Resiliencia",
+        description: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica** para asegurar la estabilidad del flujo de caja y mantener la competitividad en mercados volátiles."
+    },
+    {
+        period: "EVOLUCIÓN", // Título fijo
+        icon: TrendingUp, // Icono fijo
+        theme: "La Brecha Estratégica",
+        description: "La **transición** crítica exige pasar de la eficiencia (estandarización) a la creación de valor mediante la **innovación continua**, la construcción de una sólida gobernanza de datos y el desarrollo de nuevos liderazgos."
+    },
+    {
+        period: "+18 AÑOS (2043)", // Título fijo
+        icon: Rocket, // Icono fijo
+        theme: "Visión de Liderazgo Global",
+        description: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva, modelos de negocio regenerativos basados en la economía circular y una fuerza laboral especializada en Deep Tech."
+    }
+];
 
  
 const Block1 = ({ isActive }) => {
@@ -477,6 +477,9 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
   const found = data.employees.total.find((e) => e.name === name);
   return found || { name, value: 0 };
 });
+
+// 2) Para el piechart → excluir valores 0
+const pieEmployees = displayedEmployees.filter((e) => e.value > 0);
  
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
@@ -492,63 +495,30 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
             </h3>
           </div>
           <div className="flex-1 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={data.treemap}
-                dataKey="size"
-                stroke="#fff"
-                isAnimationActive={false}
-                aspectRatio={4 / 3}
-                content={({ x, y, width, height, name, size }) => {
+             <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-1">
+                {data.treemap.map((item, idx) => {
+                  const spanClass =
+                    idx === 0
+                      ? "col-span-2 row-span-2"    // MÁS grande
+                      : idx <= 2
+                      ? "col-span-2 row-span-1"    // medianos
+                      : "col-span-1 row-span-1";   // pequeños
+                  const isSelected = filter === item.name; // Lógica de filtrado de ejemplo
                   return (
-                    <g>
-                      <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        fill={PALETTE.industries[name] || PALETTE.industries["Otra"]}
-                        stroke="#fff"
-                      />
-
-                      {/* Mostrar textos solo si el bloque es grande */}
-                      {width > 60 && height > 40 && (
-                        <>
-                          <text
-                            x={x + width / 2}
-                            y={y + height / 2 - 6}
-                            textAnchor="middle"
-                            fill="#000"
-                            fontSize={20}
-                            stroke="none"
-                            strokeWidth={2}
-                            paintOrder="stroke"
-                            fontWeight="bold"
-                          >
-                            {name}
-                          </text>
-
-                          <text
-                            x={x + width / 2}
-                            y={y + height / 2 + 14}
-                            textAnchor="middle"
-                            fill="#000"
-                            fontSize={16}
-                            opacity={0.9}
-                            stroke="none"
-                            strokeWidth={2}
-                            paintOrder="stroke"
-                            fontWeight="bold"
-                          >
-                            {size} empresas
-                          </text>
-                        </>
-                      )}
-                    </g>
+                    <div
+                      key={item.name}
+                      onClick={() => setFilter(item.name)}
+                      className={`${spanClass} relative group cursor-pointer transition-all duration-300 overflow-hidden rounded-md border-2 ${isSelected ? 'border-black scale-[0.98]' : 'border-transparent hover:border-white hover:scale-[1.02]'}`}
+                      style={{ backgroundColor: item.fill }}
+                    >
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-2 text-center">
+                        <span className="font-bold text-shadow-sm text-sm md:text-base">{item.name}</span>
+                        <span className="text-xs md:text-sm opacity-90">{item.size} empresas</span>
+                      </div>
+                    </div>
                   );
-                }}
-              />
-            </ResponsiveContainer>
+                })}
+             </div>
           </div>
         </Card>
  
@@ -561,7 +531,7 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={displayedEmployees}
+                  data={pieEmployees}
                   cx="50%"
                   cy="50%"
                   innerRadius={80}
@@ -573,7 +543,7 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
                   startAngle={90}    // empieza arriba
                   endAngle={-270}    // gira en sentido horario
                 >
-                  {displayedEmployees.map((entry) => (
+                  {pieEmployees.map((entry) => (
                     <Cell
                       key={`cell-${entry.name}`}
                       fill={EMPLOYEE_COLORS[entry.name]}
@@ -720,9 +690,6 @@ const Block2 = ({ isActive }) => {
                 </div>
               )}
             />
-
-
-
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
               <Bar
                 key={key}
@@ -784,75 +751,41 @@ const Block3 = ({ isActive }) => {
   // Usamos los datos de salesAdoption que se generan en DataService
   const salesData = data.salesAdoption.total; 
 
+  // ORDEN ECONÓMICO (de mayor a menor dinero)
+const SALES_ORDER = [
+    "Grande - > $50.000 M",
+    "Mediana (alta) - $10.000-50.000 M",
+    "Mediana (baja) - $1.000-10.000 M",
+    "Pequeña - < $1.000 M"
+];
+
+// Reordenar según SALES_ORDER
+salesData.sort((a, b) => {
+  return SALES_ORDER.indexOf(a.name) - SALES_ORDER.indexOf(b.name);
+});
+
+
   if (data.empty || salesData.length === 0) {
-    return (
-      <div className="p-8 h-full">
-        <NoDataMessage
-          message={data.empty || "No hay datos de adopción para rangos de ventas."}
-          isError={false}
-        />
-      </div>
-    );
+    return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
   }
-
-  // 🔽🔽 ORDEN FORZADO DE LAS BARRAS 🔽🔽
-  const SALES_ORDER = [
-    "Grande",
-    "Mediana (alta)",
-    "Mediana (baja)",
-    "Pequeña",
-  ];
-
-  const normalize = (str = "") =>
-    str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-
-  const getOrderIndex = (name = "") => {
-    const cleanName = normalize(name);
-    const idx = SALES_ORDER.findIndex((label) =>
-      cleanName.includes(normalize(label))
-    );
-    return idx === -1 ? SALES_ORDER.length : idx; // los no encontrados al final
-  };
-
-  const orderedSalesData = [...salesData].sort(
-    (a, b) => getOrderIndex(a.name) - getOrderIndex(b.name)
-  );
-  // 🔼🔼 FIN ORDEN FORZADO 🔼🔼
-
-  // Forzar orden y colores en la leyenda (mismo orden que Block2)
-  const LEGEND_ORDER = ['Bajo', 'Medio', 'Alto', 'Avanzado'];
-  const legendPayload = LEGEND_ORDER.map((key) => ({
-    value: key,
-    type: 'square',
-    id: key,
-    color: PALETTE.levels[key],
-  }));
 
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
-      <SectionTitle
-        title="Adopción por Volumen de Ventas"
-        subtitle="Impacto del tamaño de facturación en la madurez tecnológica"
-      />
+      <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart
-            layout="vertical"
-            data={orderedSalesData}   
-            margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
-          >
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" unit="%" />
+            {/* Eje X (Horizontal) para los valores porcentuales */}
+            <XAxis type="number" unit="%" /> 
+            {/* Eje Y (Vertical) para los rangos de ventas */}
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={260}
-              tick={{ fill: '#666', fontWeight: 600 }} 
-            />
+              width={200} 
+              tick={{fill: '#666', fontWeight: 600}} 
+            /> 
             <RechartsTooltip 
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
@@ -900,7 +833,6 @@ const Block3 = ({ isActive }) => {
                 stackId="a" 
                 fill={PALETTE.levels[key]} 
                 barSize={40}
-                animationDuration={1500}
               />
             ))}
           </BarChart>
@@ -1045,7 +977,7 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 0, right: 20, left: 20, bottom: 12 }}
+            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}
@@ -1053,7 +985,7 @@ const Block4 = ({ isActive }) => {
               dataKey="name"
               type="category"
               tick={{ fill: "#555", fontSize: 12 }}
-              width={220}
+              width={180}
             />
             {/* eje X: porcentaje */}
             <XAxis
@@ -1273,7 +1205,6 @@ const Block5 = ({ isActive }) => {
 
  
 // --- BLOQUE 6 (NUEVA LÍNEA DE TIEMPO CON EFECTO WOW) ---
-// --- SLIDE 6 (NUEVA LÍNEA DE TIEMPO CON DATOS DINÁMICOS) ---
 const TimelineItem = ({ data, index }) => {
     const Icon = data.icon;
     
@@ -1318,7 +1249,7 @@ const TimelineItem = ({ data, index }) => {
                     <Icon size={14} className="text-white" />
                 </div>
             </div>
- 
+
             {/* Columna de Espaciado (Vacío) - solo se usa para forzar el layout */}
             <div className={`w-1/2 ${isLeft ? 'order-3' : 'order-1'}`}>
                 {/* Este div está vacío, pero su orden asegura que la caja de contenido ocupe el lado correcto */}
@@ -1327,7 +1258,7 @@ const TimelineItem = ({ data, index }) => {
         </div>
     );
 };
- 
+
 const Block6 = ({ isActive }) => {
   const [loading, setLoading] = useState(true);
   const [llmData, setLlmData] = useState(null);
@@ -1570,5 +1501,4 @@ export default function DashboardApp() {
     </div>
   );
 }
- 
  

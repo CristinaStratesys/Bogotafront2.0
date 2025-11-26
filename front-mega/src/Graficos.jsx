@@ -68,8 +68,8 @@ const EMPLOYEE_ORDER = ["1-50", "51-200", "201-500", ">500"];
 // Colores fijos por categoría de empleados (SIN tipos TS)
 const EMPLOYEE_COLORS = {
   "1-50": "#E30613",   // rojo
-  "201-500": "#5CA6D1",// azul claro
   "51-200": "#0E3A63", // azul oscuro
+  "201-500": "#5CA6D1",// azul claro
   ">500": "#F4C542",   // amarillo
 };
  
@@ -345,18 +345,6 @@ const LoadingOverlay = ({ text }) => (
     <p className="text-gray-500 mt-2">Intentando conexión con la API REST de Supabase...</p>
   </div>
 );
-
-// Nueva Animación de Carga - ESPECÍFICA PARA EL BLOQUE 6 (Síntesis de IA)
-const LoadingOverlayBlock6 = () => (
-    <div className="h-full w-full flex flex-col items-center justify-center bg-black text-white">
-        <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
-        <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
-        <p className="text-sm text-gray-400 mt-2">Preparando la línea de tiempo estratégica.</p>
-        <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
-            <div className="h-full bg-[#E30613] animate-progress"></div>
-        </div>
-    </div>
-);
  
 const NoDataMessage = ({ message, isError }) => (
   <div className="h-full flex flex-col items-center justify-center text-center p-10 bg-gray-50 rounded-xl border-4 border-dashed border-gray-200">
@@ -414,27 +402,27 @@ const IntroSlide = ({ onNext }) => (
   </div>
 );
 
-// // --- NUEVA ESTRUCTURA DE DATOS MOCK PARA IA ---
-// const AI_TIMELINE_DATA = [
-//     {
-//         period: "HOY (2025)", // Título fijo
-//         icon: Clock, // Icono fijo
-//         theme: "Foco en la Resiliencia",
-//         description: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica** para asegurar la estabilidad del flujo de caja y mantener la competitividad en mercados volátiles."
-//     },
-//     {
-//         period: "EVOLUCIÓN", // Título fijo
-//         icon: TrendingUp, // Icono fijo
-//         theme: "La Brecha Estratégica",
-//         description: "La **transición** crítica exige pasar de la eficiencia (estandarización) a la creación de valor mediante la **innovación continua**, la construcción de una sólida gobernanza de datos y el desarrollo de nuevos liderazgos."
-//     },
-//     {
-//         period: "+18 AÑOS (2043)", // Título fijo
-//         icon: Rocket, // Icono fijo
-//         theme: "Visión de Liderazgo Global",
-//         description: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva, modelos de negocio regenerativos basados en la economía circular y una fuerza laboral especializada en Deep Tech."
-//     }
-// ];
+// --- NUEVA ESTRUCTURA DE DATOS MOCK PARA IA ---
+const AI_TIMELINE_DATA = [
+    {
+        period: "HOY (2025)", // Título fijo
+        icon: Clock, // Icono fijo
+        theme: "Foco en la Resiliencia",
+        description: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica** para asegurar la estabilidad del flujo de caja y mantener la competitividad en mercados volátiles."
+    },
+    {
+        period: "EVOLUCIÓN", // Título fijo
+        icon: TrendingUp, // Icono fijo
+        theme: "La Brecha Estratégica",
+        description: "La **transición** crítica exige pasar de la eficiencia (estandarización) a la creación de valor mediante la **innovación continua**, la construcción de una sólida gobernanza de datos y el desarrollo de nuevos liderazgos."
+    },
+    {
+        period: "+18 AÑOS (2043)", // Título fijo
+        icon: Rocket, // Icono fijo
+        theme: "Visión de Liderazgo Global",
+        description: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva, modelos de negocio regenerativos basados en la economía circular y una fuerza laboral especializada en Deep Tech."
+    }
+];
 
  
 const Block1 = ({ isActive }) => {
@@ -478,6 +466,9 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
   const found = data.employees.total.find((e) => e.name === name);
   return found || { name, value: 0 };
 });
+
+// 2) Para el piechart → excluir valores 0
+const pieEmployees = displayedEmployees.filter((e) => e.value > 0);
  
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
@@ -562,7 +553,7 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={displayedEmployees}
+                  data={pieEmployees}
                   cx="50%"
                   cy="50%"
                   innerRadius={80}
@@ -574,7 +565,7 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
                   startAngle={90}    // empieza arriba
                   endAngle={-270}    // gira en sentido horario
                 >
-                  {displayedEmployees.map((entry) => (
+                  {pieEmployees.map((entry) => (
                     <Cell
                       key={`cell-${entry.name}`}
                       fill={EMPLOYEE_COLORS[entry.name]}
@@ -721,9 +712,6 @@ const Block2 = ({ isActive }) => {
                 </div>
               )}
             />
-
-
-
             {['Bajo', 'Medio', 'Alto', 'Avanzado'].map((key) => (
               <Bar
                 key={key}
@@ -786,74 +774,26 @@ const Block3 = ({ isActive }) => {
   const salesData = data.salesAdoption.total; 
 
   if (data.empty || salesData.length === 0) {
-    return (
-      <div className="p-8 h-full">
-        <NoDataMessage
-          message={data.empty || "No hay datos de adopción para rangos de ventas."}
-          isError={false}
-        />
-      </div>
-    );
+    return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;
   }
-
-  // 🔽🔽 ORDEN FORZADO DE LAS BARRAS 🔽🔽
-  const SALES_ORDER = [
-    "Grande",
-    "Mediana (alta)",
-    "Mediana (baja)",
-    "Pequeña",
-  ];
-
-  const normalize = (str = "") =>
-    str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-
-  const getOrderIndex = (name = "") => {
-    const cleanName = normalize(name);
-    const idx = SALES_ORDER.findIndex((label) =>
-      cleanName.includes(normalize(label))
-    );
-    return idx === -1 ? SALES_ORDER.length : idx; // los no encontrados al final
-  };
-
-  const orderedSalesData = [...salesData].sort(
-    (a, b) => getOrderIndex(a.name) - getOrderIndex(b.name)
-  );
-  // 🔼🔼 FIN ORDEN FORZADO 🔼🔼
-
-  // Forzar orden y colores en la leyenda (mismo orden que Block2)
-  const LEGEND_ORDER = ['Bajo', 'Medio', 'Alto', 'Avanzado'];
-  const legendPayload = LEGEND_ORDER.map((key) => ({
-    value: key,
-    type: 'square',
-    id: key,
-    color: PALETTE.levels[key],
-  }));
 
   return (
     <div className="h-full flex flex-col p-8 animate-fadeIn">
-      <SectionTitle
-        title="Adopción por Volumen de Ventas"
-        subtitle="Impacto del tamaño de facturación en la madurez tecnológica"
-      />
+      <SectionTitle title="Adopción por Volumen de Ventas" subtitle="Impacto del tamaño de facturación en la madurez tecnológica" />
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart
-            layout="vertical"
-            data={orderedSalesData}   
-            margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
-          >
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" unit="%" />
+            {/* Eje X (Horizontal) para los valores porcentuales */}
+            <XAxis type="number" unit="%" /> 
+            {/* Eje Y (Vertical) para los rangos de ventas */}
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={260}
-              tick={{ fill: '#666', fontWeight: 600 }} 
-            />
+              width={100} 
+              tick={{fill: '#666', fontWeight: 600}} 
+            /> 
             <RechartsTooltip 
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
@@ -901,7 +841,6 @@ const Block3 = ({ isActive }) => {
                 stackId="a" 
                 fill={PALETTE.levels[key]} 
                 barSize={40}
-                animationDuration={1500}
               />
             ))}
           </BarChart>
@@ -1046,7 +985,7 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 0, right: 20, left: 20, bottom: 12 }}
+            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}
@@ -1054,7 +993,7 @@ const Block4 = ({ isActive }) => {
               dataKey="name"
               type="category"
               tick={{ fill: "#555", fontSize: 12 }}
-              width={220}
+              width={180}
             />
             {/* eje X: porcentaje */}
             <XAxis
@@ -1274,7 +1213,6 @@ const Block5 = ({ isActive }) => {
 
  
 // --- BLOQUE 6 (NUEVA LÍNEA DE TIEMPO CON EFECTO WOW) ---
-// --- SLIDE 6 (NUEVA LÍNEA DE TIEMPO CON DATOS DINÁMICOS) ---
 const TimelineItem = ({ data, index }) => {
     const Icon = data.icon;
     
@@ -1284,13 +1222,12 @@ const TimelineItem = ({ data, index }) => {
  
     return (
         <div 
-            // Margen Superior Negativo para superposición
-            className={`flex w-full animate-slideUp items-start ${index > 0 ? 'mt-[-60px] md:mt-[-76px]' : ''}`} // Ajuste de margen para superponer items
+            className={`flex w-full mb-6 md:mb-8 animate-slideUp items-start`} // 4. Reducción de margin-bottom: de mb-8 a mb-6
             style={{ animationDelay: `${index * 300 + 500}ms` }}
         >
             
             {/* Columna de Contenido (Texto de IA) */}
-            <div className={`w-1/2 ${isLeft ? 'pr-4 sm:pr-8' : 'pl-4 sm:pl-8'} ${isLeft ? 'order-1' : 'order-3'}`}> 
+            <div className={`w-1/2 ${isLeft ? 'pr-4 sm:pr-8' : 'pl-4 sm:pl-8'} ${isLeft ? 'order-1' : 'order-3'}`}>
                 <div className={`bg-white p-4 rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 h-full flex flex-col ${isLeft ? 'text-right border-r-4' : 'text-left border-l-4'} border-[#E30613]`}>
                     
                     {/* Título del Período (Alineado con el contenido) */}
@@ -1299,7 +1236,7 @@ const TimelineItem = ({ data, index }) => {
                     </h3>
  
                     {/* Descripción de IA */}
-                    <p className="text-sm md:text-basic font-medium text-gray-800 italic leading-relaxed whitespace-pre-line flex-1"> {/* Tamaño de fuente ajustado */}
+                    <p className="text-sm md:text-base font-medium text-gray-800 italic leading-relaxed whitespace-pre-line flex-1">
                         {data.description}
                     </p>
                     
@@ -1318,7 +1255,7 @@ const TimelineItem = ({ data, index }) => {
                     <Icon size={14} className="text-white" />
                 </div>
             </div>
- 
+
             {/* Columna de Espaciado (Vacío) - solo se usa para forzar el layout */}
             <div className={`w-1/2 ${isLeft ? 'order-3' : 'order-1'}`}>
                 {/* Este div está vacío, pero su orden asegura que la caja de contenido ocupe el lado correcto */}
@@ -1327,152 +1264,53 @@ const TimelineItem = ({ data, index }) => {
         </div>
     );
 };
- 
+
 const Block6 = ({ isActive }) => {
     const [loading, setLoading] = useState(true);
-    const [llmData, setLlmData] = useState(null); // Estado para guardar los datos de la tabla 'llm'
- 
-    // Función para obtener datos de la tabla 'llm'
-    const fetchLlmData = async () => {
-        if (!SUPABASE_URL || !SUPABASE_KEY) {
-            console.error("Faltan SUPABASE_URL o SUPABASE_KEY.");
-            setLlmData(null); 
-            setLoading(false);
-            return;
-        }
- 
-        // Endpoint para la tabla 'llm', ordenado por fecha de creación descendente y limitado a 1 registro
-        const ENDPOINT_LLM = `${BASE_URL}/rest/v1/llm?select=pregunta_1,pregunta_2,resumen_final&order=created_at.desc&limit=1`;
- 
-        try {
-            const response = await fetch(ENDPOINT_LLM, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                },
-            });
- 
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
- 
-            const data = await response.json();
-            
-            if (data && data.length > 0) {
-                setLlmData(data[0]); // Tomar el registro más reciente
-                console.log("Datos de LLM cargados:", data[0]);
-            } else {
-                setLlmData({}); // Usar un objeto vacío para indicar que no hay datos
-                console.log("No se encontraron datos en la tabla 'llm'.");
-            }
- 
-        } catch (error) {
-            console.error("Error al obtener datos de la tabla 'llm':", error);
-            setLlmData({});
-        } finally {
-            // Se asume que el loading termina después de intentar el fetch, independientemente del éxito o fracaso.
-            setLoading(false);
-        }
-    };
- 
  
     useEffect(() => {
         if (isActive) {
-            // CORRECCIÓN 1: Iniciar loading al activar, y dejar que fetchLlmData lo desactive
-            setLoading(true); 
-            // Simula el tiempo de procesamiento de la IA (efecto WOW) antes de hacer la llamada a la BDD
+            // Simula el tiempo de procesamiento y síntesis de la IA
             const timer = setTimeout(() => {
-                fetchLlmData();
-            }, 3000); 
+                setLoading(false);
+            }, 3000); // 3 segundos para el "WOW" effect
             return () => clearTimeout(timer);
         } else {
-            // Reinicia los datos si el slide se desactiva
-            setLlmData(null); 
+            setLoading(true); // Reinicia si el slide no está activo para el próximo uso
         }
     }, [isActive]);
  
- 
-    const timelineItems = useMemo(() => {
-        // Estructura base con iconos y títulos fijos, mapeando las claves de la BDD
-        const fixedStructure = [
-            {
-                period: "HOY (2025)", 
-                icon: Clock, 
-                theme: "Foco en la Resiliencia",
-                dataKey: 'pregunta_1', // Mapeo a columna
-                defaultDescription: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica**."
-            },
-            {
-                period: "EVOLUCIÓN", 
-                icon: TrendingUp, 
-                theme: "La Brecha Estratégica",
-                dataKey: 'resumen_final', // Mapeo a columna
-                defaultDescription: "La **transición** exige pasar de la eficiencia a la creación de valor mediante la **innovación continua**."
-            },
-            {
-                period: "+18 AÑOS (2043)", 
-                icon: Rocket, 
-                theme: "Visión de Liderazgo Global",
-                dataKey: 'pregunta_2', // Mapeo a columna
-                defaultDescription: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva."
-            }
-        ];
- 
-        if (!llmData) {
-            // Si aún no se cargan o hay un error, usa las descripciones por defecto
-            return fixedStructure.map(item => ({
-                ...item,
-                description: item.defaultDescription
-            }));
-        }
- 
-        // Mapear los datos de la BDD a la estructura de la línea de tiempo
-        return fixedStructure.map(item => ({
-            ...item,
-            // Asigna la descripción de la BDD, o un mensaje si el campo está vacío
-            description: llmData[item.dataKey] || `[Contenido dinámico de ${item.period} aún no disponible].`
-        }));
- 
-    }, [llmData]); // Re-calcular si los datos de la LLM cambian
- 
- 
     if (loading) {
-        // Usa la nueva animación dramática para el Bloque 6
+        // Usa el LoadingOverlay para el efecto "WOW" de análisis de IA
         return (
-            <div className="h-full relative flex items-center justify-center bg-gray-900">
-                <LoadingOverlayBlock6 /> 
-            </div>
-        );
-    }
-    
-    // Mostrar mensaje de NoDataMessage si no hay datos después de la carga
-    if (!llmData || Object.keys(llmData).length === 0 || (!llmData.pregunta_1 && !llmData.pregunta_2 && !llmData.resumen_final)) {
-        return (
-            <div className="h-full relative flex items-center justify-center bg-gray-50">
-                <NoDataMessage /> 
-            </div>
+        <div className="h-full flex flex-col items-center justify-center bg-black text-white">
+          <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
+          <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
+          <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
+            <div className="h-full bg-[#E30613] animate-progress"></div>
+          </div>
+         </div>
         );
     }
  
     return (
-        <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> 
+        <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> {/* 1. pt-4/pt-6 para subir el contenido */}
+            
+            {/* 1. Título Eliminado */}
             
             {/* Contenedor de la Línea de Tiempo */}
-            <div className="flex justify-center w-full min-h-[50vh] pb-100"> 
+            <div className="flex justify-center w-full min-h-[50vh] pb-40"> {/* 2. pb-40 para alargar visualmente la línea */}
                 <div className="relative w-full max-w-6xl pt-4"> 
                     
                     {/* La verdadera línea vertical - Centered */}
                     <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-gray-200"></div> 
  
-                    {/* CORRECCIÓN 2: Mapear la constante 'timelineItems' (el useMemo) */}
-                    {timelineItems.map((item, index) => (
+                    {AI_TIMELINE_DATA.map((item, index) => (
                         <TimelineItem key={index} data={item} index={index} />
                     ))}
                     
                     {/* Nota Final de IA */}
-                    <div className="text-center mt-10 p-3 bg-red-50 rounded-lg max-w-md mx-auto shadow-md animate-slideUp" style={{ animationDelay: `${(timelineItems.length) * 300 + 500}ms` }}>
+                    <div className="text-center mt-10 p-3 bg-red-50 rounded-lg max-w-md mx-auto shadow-md animate-slideUp" style={{ animationDelay: `${(AI_TIMELINE_DATA.length) * 300 + 500}ms` }}>
                          <p className="text-xs text-[#BA0C2F] font-semibold"> 
                             Estos puntos representan la síntesis de la evolución de las respuestas del cuestionario (Hoy vs. 18 Años).
                         </p>
@@ -1482,7 +1320,6 @@ const Block6 = ({ isActive }) => {
         </div>
     );
 };
-
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 7; // Reducido a 3: Intro, Block1, Block2, Block6
@@ -1558,5 +1395,4 @@ export default function DashboardApp() {
     </div>
   );
 }
- 
  

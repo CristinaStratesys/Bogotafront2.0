@@ -108,7 +108,7 @@ const MainView = ({ onCommand, onSwitchToNav }) => (
     <CommandButton
       id="btn-show-qr"
       title="Mostrar QR"
-      description="Proyectar código de acceso"
+      description="Proyectar QR de acceso al formulario"
       command="SHOW_QR"
       onSend={onCommand}
       Icon={QrIcon}

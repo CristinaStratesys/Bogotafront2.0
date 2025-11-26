@@ -492,6 +492,12 @@ const pieEmployees = displayedEmployees.filter((e) => e.value > 0);
                 isAnimationActive={false}
                 aspectRatio={4 / 3}
                 content={({ x, y, width, height, name, size }) => {
+                  // MULTILÍNEA SOLO PARA ESTA INDUSTRIA
+                  let displayName = name;
+                  if (name === "Energía y Minería") {
+                    displayName = ["Energía y", "Minería"];
+                  }
+
                   return (
                     <g>
                       <rect
@@ -506,30 +512,50 @@ const pieEmployees = displayedEmployees.filter((e) => e.value > 0);
                       {/* Mostrar textos solo si el bloque es grande */}
                       {width > 60 && height > 40 && (
                         <>
-                          <text
-                            x={x + width / 2}
-                            y={y + height / 2 - 6}
-                            textAnchor="middle"
-                            fill="#000"
-                            fontSize={20}
-                            stroke="none"
-                            strokeWidth={2}
-                            paintOrder="stroke"
-                            fontWeight="bold"
-                          >
-                            {name}
-                          </text>
+                          {Array.isArray(displayName) ? (
+                            // ---- RENDER MULTILÍNEA ----
+                            displayName.map((line, i) => (
+                              <text
+                                key={i}
+                                x={x + width / 2}
+                                y={y + height / 2 - 6 + i * 18}
+                                textAnchor="middle"
+                                fill="#000"
+                                fontSize={20}
+                                stroke="none"
+                                fontWeight="bold"
+                              >
+                                {line}
+                              </text>
+                            ))
+                          ) : (
+                            // ---- TEXTO NORMAL ----
+                            <text
+                              x={x + width / 2}
+                              y={y + height / 2 - 6}
+                              textAnchor="middle"
+                              fill="#000"
+                              fontSize={20}
+                              stroke="none"
+                              fontWeight="bold"
+                            >
+                              {displayName}
+                            </text>
+                          )}
 
+                          {/* Número de empresas */}
                           <text
                             x={x + width / 2}
-                            y={y + height / 2 + 14}
+                            y={
+                              name === "Energía y Minería"
+                                ? y + height / 2 + 30   // ⬅️ MÁS ABAJO SOLO AQUÍ
+                                : y + height / 2 + 14   // ⬅️ posición normal
+                            }
                             textAnchor="middle"
                             fill="#000"
                             fontSize={16}
                             opacity={0.9}
                             stroke="none"
-                            strokeWidth={2}
-                            paintOrder="stroke"
                             fontWeight="bold"
                           >
                             {size} empresas
@@ -772,6 +798,20 @@ const Block3 = ({ isActive }) => {
 
   // Usamos los datos de salesAdoption que se generan en DataService
   const salesData = data.salesAdoption.total; 
+
+  // ORDEN ECONÓMICO (de mayor a menor dinero)
+const SALES_ORDER = [
+    "Grande - > $50.000 M",
+    "Mediana (alta) - $10.000-50.000 M",
+    "Mediana (baja) - $1.000-10.000 M",
+    "Pequeña - < $1.000 M"
+];
+
+// Reordenar según SALES_ORDER
+salesData.sort((a, b) => {
+  return SALES_ORDER.indexOf(a.name) - SALES_ORDER.indexOf(b.name);
+});
+
 
   if (data.empty || salesData.length === 0) {
     return <div className="p-8 h-full"><NoDataMessage message={data.empty || "No hay datos de adopción para rangos de ventas."} isError={false} /></div>;

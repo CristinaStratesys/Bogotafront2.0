@@ -245,7 +245,7 @@ const App = () => {
       {/* MAIN CONTENT */}
       <main className="flex-grow flex flex-col p-5 pt-10 max-w-xl w-full mx-auto relative">
         <div className="text-center mb-6 text-sm text-[#666666] uppercase tracking-wider">
-          III Encuentro TrayectoriaMEGA
+          III Encuentro Trayectoria MEGA
         </div>
  
         {/* Renderizado condicional de las vistas */}

@@ -791,7 +791,7 @@ const Block3 = ({ isActive }) => {
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={100} 
+              width={200} 
               tick={{fill: '#666', fontWeight: 600}} 
             /> 
             <RechartsTooltip 

@@ -374,23 +374,24 @@ export default function DashboardPresentation() {
       <main className="flex flex-1 h-full overflow-hidden">
         
         {/* ZONA IZQUIERDA: QR */}
-        <section className="w-[30%] h-[calc(100vh-64px)] overflow-hidden flex flex-col items-center justify-start bg-white p-6">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#E30613] to-[#BA0C2F]"></div>
-            
-            <div className="mb-8">
-                <h2 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">¡Participa ahora!<br/></h2>
-                <p className="text-gray-500 text-lg">Rellena el formulario para participar.</p>
-            </div>
+        <section className="w-[30%] h-[calc(100vh-64px)] overflow-hidden flex flex-col items-center justify-center bg-white p-6">
+          <div className="flex flex-col items-center justify-center gap-8">
+              
+              <div className="text-center">
+                  <h2 className="text-4xl font-extrabold ...">¡Participa ahora!<br/></h2>
+                  <p className="text-gray-500 text-lg">Rellena el formulario para participar.</p>
+              </div>
 
-            <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-br from-[#E30613] to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                <div className="relative bg-white p-4 rounded-xl border border-gray-100 shadow-xl">
-                    <img 
-                        src={QR_API_URL} 
-                        className="w-49 h-49 object-contain"
-                    />
-                </div>
-            </div>
+              <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[#E30613] to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+
+                  <div className="relative bg-white p-4 rounded-xl border border-gray-100 shadow-xl">
+                      <img src={QR_API_URL} className="w-49 h-49 object-contain" />
+                  </div>
+              </div>
+
+          </div>
+
 
         </section>
 

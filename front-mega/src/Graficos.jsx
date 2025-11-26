@@ -345,6 +345,17 @@ const LoadingOverlay = ({ text }) => (
     <p className="text-gray-500 mt-2">Intentando conexión con la API REST de Supabase...</p>
   </div>
 );
+
+// Nueva Animación de Carga - ESPECÍFICA PARA EL BLOQUE 6 (Síntesis de IA)
+const LoadingOverlayBlock6 = () => (
+    <div className="h-full w-full flex flex-col items-center justify-center bg-black text-white">
+        <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
+        <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
+        <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
+            <div className="h-full bg-[#E30613] animate-progress"></div>
+        </div>
+    </div>
+);
  
 const NoDataMessage = ({ message, isError }) => (
   <div className="h-full flex flex-col items-center justify-center text-center p-10 bg-gray-50 rounded-xl border-4 border-dashed border-gray-200">
@@ -384,11 +395,8 @@ const IntroSlide = ({ onNext }) => (
 </div>
 
       <h1 className="text-6xl font-extrabold text-gray-900 leading-tight drop-shadow-sm">
-        Resultados Proyecto <span className="text-[#E30613]">MEGA</span>
+        III Encuentro Nacional de Empresas en <span className="text-[#E30613]">Trayectoria MEGA</span>
       </h1>
-      <h2 className="text-3xl text-gray-600 font-light">
-        Encuesta de Visión Empresarial 2025
-      </h2>
       <div className="pt-12">
         <button
           onClick={onNext}
@@ -764,15 +772,21 @@ salesData.sort((a, b) => {
       <Card className="flex-1 p-8">
         <ResponsiveContainer width="100%" height="100%">
           {/* Gráfico de Barras Horizontal Apilado (100% Stacked Bar Chart) */}
-          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+          <BarChart layout="vertical" data={salesData} margin={{ top: 20, right: 45, left: 25, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* Eje X (Horizontal) para los valores porcentuales */}
-            <XAxis type="number" unit="%" /> 
+            <XAxis
+              type="number"
+              domain={[0, 100]}                // ⬅ forzamos 0–100
+              ticks={[0, 25, 50, 75, 100]}     // ⬅ mismas marcas pero sin 120
+              tickFormatter={(v) => `${v}%`}   // ⬅ añadimos el símbolo %
+            />
+ 
             {/* Eje Y (Vertical) para los rangos de ventas */}
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={200} 
+              width={300} 
               tick={{fill: '#666', fontWeight: 600}} 
             /> 
             <RechartsTooltip 
@@ -966,7 +980,7 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 20, right: 40, left: 180, bottom: 20 }}
+            margin={{ top: 20, right: 50, left: 40, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}
@@ -1203,13 +1217,14 @@ const TimelineItem = ({ data, index }) => {
  
     return (
         <div 
-            className={`flex w-full mb-6 md:mb-8 animate-slideUp items-start`} // 4. Reducción de margin-bottom: de mb-8 a mb-6
+            // Margen Superior Negativo para superposición
+            className={`flex w-full animate-slideUp items-start h-[33svh] ${index > 0 ? 'mt-[-60px] md:mt-[-76px]' : ''}`} // Ajuste de margen para superponer items
             style={{ animationDelay: `${index * 300 + 500}ms` }}
         >
             
             {/* Columna de Contenido (Texto de IA) */}
-            <div className={`w-1/2 ${isLeft ? 'pr-4 sm:pr-8' : 'pl-4 sm:pl-8'} ${isLeft ? 'order-1' : 'order-3'}`}>
-                <div className={`bg-white p-4 rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 h-full flex flex-col ${isLeft ? 'text-right border-r-4' : 'text-left border-l-4'} border-[#E30613]`}>
+            <div className={`w-1/2 ${isLeft ? 'pr-4 sm:pr-8' : 'pl-4 sm:pl-8'} ${isLeft ? 'order-1' : 'order-3'}`}> 
+                <div className={`bg-white p-4 rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 h-full flex flex-col justify-between overflow-hidden ${isLeft ? 'text-right border-r-4' : 'text-left border-l-4'} border-[#E30613]`}>
                     
                     {/* Título del Período (Alineado con el contenido) */}
                     <h3 className={`text-xl md:text-xl font-bold text-[#E30613] mb-2 ${isLeft ? 'self-end' : 'self-start'}`}>
@@ -1217,9 +1232,10 @@ const TimelineItem = ({ data, index }) => {
                     </h3>
  
                     {/* Descripción de IA */}
-                    <p className="text-sm md:text-base font-medium text-gray-800 italic leading-relaxed whitespace-pre-line flex-1">
-                        {data.description}
+                    <p className="text-sm md:text-base text-gray-700 leading-tight">
+                      {data.description}
                     </p>
+
                     
                     {/* Énfasis en la generación por IA */}
                     <span className={`inline-flex items-center mt-2 text-xs font-semibold text-[#BA0C2F] bg-red-50 px-2 py-0.5 rounded-full ${isLeft ? 'self-end' : 'self-start'}`}>
@@ -1247,60 +1263,172 @@ const TimelineItem = ({ data, index }) => {
 };
 
 const Block6 = ({ isActive }) => {
-    const [loading, setLoading] = useState(true);
- 
-    useEffect(() => {
-        if (isActive) {
-            // Simula el tiempo de procesamiento y síntesis de la IA
-            const timer = setTimeout(() => {
-                setLoading(false);
-            }, 3000); // 3 segundos para el "WOW" effect
-            return () => clearTimeout(timer);
-        } else {
-            setLoading(true); // Reinicia si el slide no está activo para el próximo uso
-        }
-    }, [isActive]);
- 
-    if (loading) {
-        // Usa el LoadingOverlay para el efecto "WOW" de análisis de IA
-        return (
-        <div className="h-full flex flex-col items-center justify-center bg-black text-white">
-          <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
-          <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
-          <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
-            <div className="h-full bg-[#E30613] animate-progress"></div>
-          </div>
-         </div>
-        );
+  const [loading, setLoading] = useState(true);
+  const [llmData, setLlmData] = useState(null);
+
+  // ---- FETCH A SUPABASE ----
+  const fetchLlmData = async () => {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      console.error("Faltan credenciales de Supabase.");
+      setLlmData(null);
+      setLoading(false);
+      return;
     }
- 
+
+    const ENDPOINT_LLM = `${BASE_URL}/rest/v1/llm?select=pregunta_1,pregunta_2,resumen_final&order=created_at.desc&limit=1`;
+
+    try {
+      const response = await fetch(ENDPOINT_LLM, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      setLlmData(data?.[0] || {});
+    } catch (err) {
+      console.error("Error al leer Supabase:", err);
+      setLlmData({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- TYPEWRITER ----
+  const typeWriter = (element, text, speed = 15) => {
+    return new Promise((resolve) => {
+      let i = 0;
+      element.innerHTML = "";
+
+      function typing() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(typing, speed);
+        } else {
+          resolve();
+        }
+      }
+      typing();
+    });
+  };
+
+  // ---- SECUENCIA DE ESCRITURA ----
+  const startSequence = async () => {
+    const elA = document.getElementById("visionActual");
+    const elB = document.getElementById("vision18");
+    const elC = document.getElementById("evolucion");
+
+    if (!elA || !elB || !elC) return;
+
+    await typeWriter(elA, llmData.pregunta_1 || "");
+    await typeWriter(elB, llmData.pregunta_2 || "");
+    await typeWriter(elC, llmData.resumen_final || "");
+  };
+
+  // ---- CARGA CUANDO SE ACTIVA EL SLIDE ----
+  useEffect(() => {
+    if (isActive) {
+      setLoading(true);
+      const timer = setTimeout(async () => {
+        await fetchLlmData();
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isActive]);
+
+  // ---- INICIAR TYPEWRITER CUANDO YA HAY DATOS ----
+  useEffect(() => {
+    if (!loading && llmData) startSequence();
+  }, [loading, llmData]);
+
+  // ---- LOADING ----
+  if (loading)
     return (
-        <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> {/* 1. pt-4/pt-6 para subir el contenido */}
-            
-            {/* 1. Título Eliminado */}
-            
-            {/* Contenedor de la Línea de Tiempo */}
-            <div className="flex justify-center w-full min-h-[50vh] pb-40"> {/* 2. pb-40 para alargar visualmente la línea */}
-                <div className="relative w-full max-w-6xl pt-4"> 
-                    
-                    {/* La verdadera línea vertical - Centered */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-gray-200"></div> 
- 
-                    {AI_TIMELINE_DATA.map((item, index) => (
-                        <TimelineItem key={index} data={item} index={index} />
-                    ))}
-                    
-                    {/* Nota Final de IA */}
-                    <div className="text-center mt-10 p-3 bg-red-50 rounded-lg max-w-md mx-auto shadow-md animate-slideUp" style={{ animationDelay: `${(AI_TIMELINE_DATA.length) * 300 + 500}ms` }}>
-                         <p className="text-xs text-[#BA0C2F] font-semibold"> 
-                            Estos puntos representan la síntesis de la evolución de las respuestas del cuestionario (Hoy vs. 18 Años).
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="h-full flex items-center justify-center bg-gray-900">
+        <LoadingOverlayBlock6 />
+      </div>
     );
+
+  // ---- NO DATA ----
+  if (!llmData || Object.keys(llmData).length === 0)
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <NoDataMessage />
+      </div>
+    );
+
+  // ---- UI NUEVA (70% / 30%) ----
+  return (
+    <div className="h-full w-full grid grid-cols-1 lg:grid-cols-10 gap-4 p-6 bg-gray-50">
+
+      {/* Columna izquierda (70%) */}
+      <div className="col-span-1 lg:col-span-7 flex flex-col gap-4">
+
+        {/* Visión Actual */}
+        <div className="flex-1 bg-white p-6 rounded-xl shadow-xl h-full">
+          <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
+            Propósito Actual
+          </h2>
+          <p id="visionActual" className="text-gray-700 text-lg leading-relaxed"></p>
+        </div>
+
+        {/* Visión 18 Años */}
+        <div className="flex-1 bg-white p-6 rounded-xl shadow-xl h-full">
+          <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
+            Propósito en 18 Años
+          </h2>
+          <p id="vision18" className="text-gray-700 text-lg leading-relaxed"></p>
+        </div>
+      </div>
+
+      {/* Columna derecha (30%) */}
+      <div className="col-span-1 lg:col-span-3 bg-red-700 p-8 rounded-xl shadow-2xl flex flex-col h-full">
+        <h2 className="text-2xl font-bold text-white border-b border-red-500 pb-3 mb-6">
+          Evolución de propósito
+        </h2>
+        <p id="evolucion" className="text-white text-lg leading-relaxed"></p>
+      </div>
+    </div>
+  );
 };
+
+
+
+// ======================================================
+// --- SUBCOMPONENTE PARA PANEL DE VISIÓN ---
+// ======================================================
+const VisionPanel = ({ title, color, content, panelId }) => {
+  const textColor =
+    color === "red" ? "text-white" : "text-gray-800";
+  const bg =
+    color === "red" ? "bg-red-700 hover:shadow-red-900" : "bg-white hover:shadow-blue-300";
+  const borderIcon =
+    color === "red" ? "text-red-300" : "text-blue-500";
+
+  return (
+    <div className={`${bg} p-6 rounded-xl shadow-2xl transition-all flex flex-col`}>
+      <h2 className={`text-2xl font-bold border-b-2 pb-3 mb-4 flex items-center ${textColor}`}>
+        <svg className={`w-6 h-6 mr-2 ${borderIcon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3" />
+        </svg>
+        {title}
+      </h2>
+
+      <p className={`${textColor} text-lg leading-relaxed whitespace-pre-line`}>
+        {content}
+      </p>
+    </div>
+  );
+};
+
+
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 7; // Reducido a 3: Intro, Block1, Block2, Block6

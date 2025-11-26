@@ -7,6 +7,7 @@ import {
   ChevronRight, ChevronLeft, Activity, Brain, Users, Building2,
   Zap, Database, Globe, Share2, Rocket, AlertTriangle, Clock, TrendingUp
 } from 'lucide-react';
+
 // La librería @supabase/supabase-js ha sido eliminada. Usaremos 'fetch' directamente.
  
  
@@ -44,11 +45,11 @@ const PALETTE = {
   text: '#333333',
   gray: '#CCCCCC',
   industries: {
-    'Manufactura': '#E30613',
-    'Construcción': '#0E3A63',
+    'Manufactura': '#F46A6A',
+    'Construcción': '#F4B6C2',
     'Tecnología': '#5CA6D1',
     'Comercio': '#F4C542',
-    'Energía y Minería': '#9A70D6',
+    'Energía y Minería': '#C7A8EA',
     'Agroindustria': '#9DD9C4',
     'Salud': '#30A66D',
     'Servicios': '#5BB3C4',
@@ -192,12 +193,19 @@ const DataService = {
         sectorsTech[industria] = initAdoptionObject();
       }
 
-      // 2) EMPLEADOS
-      const numEmpleados = row.empleados || "1-50";
-      if (employeesGroups[numEmpleados] === undefined) {
-        employeesGroups[numEmpleados] = 0;
+      // Normalizar guiones: convertir EN DASH (–), EM DASH (—) u otros a "-" estándar
+      let numEmpleados = (row.empleados || "1-50")
+        .replace(/[\u2013\u2014\u2212]/g, "-")   // remplaza – — − por -
+        .trim();
+
+      // Si no está en el diccionario por orden, se cae a ">500" o el default
+      if (!EMPLOYEE_ORDER.includes(numEmpleados)) {
+        numEmpleados = ">500"; 
       }
-      employeesGroups[numEmpleados] += 1;
+
+      // Acumular
+      employeesGroups[numEmpleados] = (employeesGroups[numEmpleados] || 0) + 1;
+
 
       // 3) ADOPCIÓN TECNOLÓGICA (misma etiqueta que metes en la BD)
     // Normalizar tildes para comparar correctamente
@@ -485,30 +493,63 @@ const displayedEmployees = EMPLOYEE_ORDER.map((name) => {
             </h3>
           </div>
           <div className="flex-1 relative">
-             <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-1">
-                {data.treemap.map((item, idx) => {
-                  const spanClass =
-                    idx === 0
-                      ? "col-span-2 row-span-2"    // MÁS grande
-                      : idx <= 2
-                      ? "col-span-2 row-span-1"    // medianos
-                      : "col-span-1 row-span-1";   // pequeños
-                  const isSelected = filter === item.name; // Lógica de filtrado de ejemplo
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={data.treemap}
+                dataKey="size"
+                stroke="#fff"
+                isAnimationActive={false}
+                aspectRatio={4 / 3}
+                content={({ x, y, width, height, name, size }) => {
                   return (
-                    <div
-                      key={item.name}
-                      onClick={() => setFilter(item.name)}
-                      className={`${spanClass} relative group cursor-pointer transition-all duration-300 overflow-hidden rounded-md border-2 ${isSelected ? 'border-black scale-[0.98]' : 'border-transparent hover:border-white hover:scale-[1.02]'}`}
-                      style={{ backgroundColor: item.fill }}
-                    >
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-2 text-center">
-                        <span className="font-bold text-shadow-sm text-sm md:text-base">{item.name}</span>
-                        <span className="text-xs md:text-sm opacity-90">{item.size} empresas</span>
-                      </div>
-                    </div>
+                    <g>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={width}
+                        height={height}
+                        fill={PALETTE.industries[name] || PALETTE.industries["Otra"]}
+                        stroke="#fff"
+                      />
+
+                      {/* Mostrar textos solo si el bloque es grande */}
+                      {width > 60 && height > 40 && (
+                        <>
+                          <text
+                            x={x + width / 2}
+                            y={y + height / 2 - 6}
+                            textAnchor="middle"
+                            fill="#000"
+                            fontSize={20}
+                            stroke="none"
+                            strokeWidth={2}
+                            paintOrder="stroke"
+                            fontWeight="bold"
+                          >
+                            {name}
+                          </text>
+
+                          <text
+                            x={x + width / 2}
+                            y={y + height / 2 + 14}
+                            textAnchor="middle"
+                            fill="#000"
+                            fontSize={16}
+                            opacity={0.9}
+                            stroke="none"
+                            strokeWidth={2}
+                            paintOrder="stroke"
+                            fontWeight="bold"
+                          >
+                            {size} empresas
+                          </text>
+                        </>
+                      )}
+                    </g>
                   );
-                })}
-             </div>
+                }}
+              />
+            </ResponsiveContainer>
           </div>
         </Card>
  

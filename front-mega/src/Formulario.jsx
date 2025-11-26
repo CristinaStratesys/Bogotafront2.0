@@ -93,8 +93,8 @@ export default function App() {
 
     const salesVolumes = [
         "Pequeña - < $1.000 M",
-        "Mediana (baja) - $1.000–10.000 M",
-        "Mediana (alta) - $10.000–50.000 M",
+        "Mediana (baja) - $1.000-10.000 M",
+        "Mediana (alta) - $10.000-50.000 M",
         "Grande - > $50.000 M"
     ];
 
@@ -106,10 +106,10 @@ export default function App() {
     ];
 
     const techLevels = [
-        { id: 'bajo', label: 'Bajo – Uso limitado de herramientas básicas', color: 'text-red-600', border: 'border-red-200', bg: 'bg-red-50' },
-        { id: 'medio', label: 'Medio – Digitalización parcial de procesos', color: 'text-yellow-600', border: 'border-yellow-200', bg: 'bg-yellow-50' },
-        { id: 'alto', label: 'Alto – Automatización y analítica integrada', color: 'text-green-600', border: 'border-green-200', bg: 'bg-green-50' },
-        { id: 'avanzado', label: 'Avanzado – Uso intensivo de IA, IoT, etc.', color: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50' }
+        { id: 'bajo', label: 'Bajo - Uso limitado de herramientas básicas', color: 'text-red-600', border: 'border-red-200', bg: 'bg-red-50' },
+        { id: 'medio', label: 'Medio - Digitalización parcial de procesos', color: 'text-yellow-600', border: 'border-yellow-200', bg: 'bg-yellow-50' },
+        { id: 'alto', label: 'Alto - Automatización y analítica integrada', color: 'text-green-600', border: 'border-green-200', bg: 'bg-green-50' },
+        { id: 'avanzado', label: 'Avanzado - Uso intensivo de IA, IoT, etc.', color: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50' }
     ];
 
     const techList = [

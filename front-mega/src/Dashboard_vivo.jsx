@@ -322,7 +322,7 @@ export default function DashboardPresentation() {
   </button>
 
   {/* Logos centrados */}
-  <div className="flex items-center gap-4 mx-auto">
+  <div className="flex items-center gap-4">
     <img 
       src="/Cámara_de_Comercio_de_Bogotá_logo.png"
       alt="Cámara de Comercio"
@@ -335,10 +335,16 @@ export default function DashboardPresentation() {
     />
   </div>
 
-  {/* Espaciador para mantener centrado el logo */}
-  <div className="w-20"></div>
+  {/* Botón En vivo */}
+  <button 
+    className="flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 px-3 py-1 rounded-full text-sm font-semibold"
+  >
+    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+    En vivo
+  </button>
 
 </header>
+
 
 
 

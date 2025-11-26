@@ -351,7 +351,6 @@ const LoadingOverlayBlock6 = () => (
     <div className="h-full w-full flex flex-col items-center justify-center bg-black text-white">
         <Brain size={64} className="text-[#E30613] animate-bounce mb-6" />
         <h2 className="text-3xl font-mono animate-pulse">GENERANDO VISIÓN CONJUNTA...</h2>
-        <p className="text-sm text-gray-400 mt-2">Preparando la línea de tiempo estratégica.</p>
         <div className="w-64 h-2 bg-gray-800 rounded mt-4 overflow-hidden">
             <div className="h-full bg-[#E30613] animate-progress"></div>
         </div>
@@ -1285,13 +1284,13 @@ const TimelineItem = ({ data, index }) => {
     return (
         <div 
             // Margen Superior Negativo para superposición
-            className={`flex w-full animate-slideUp items-start ${index > 0 ? 'mt-[-60px] md:mt-[-76px]' : ''}`} // Ajuste de margen para superponer items
+            className={`flex w-full animate-slideUp items-start h-[33svh] ${index > 0 ? 'mt-[-60px] md:mt-[-76px]' : ''}`} // Ajuste de margen para superponer items
             style={{ animationDelay: `${index * 300 + 500}ms` }}
         >
             
             {/* Columna de Contenido (Texto de IA) */}
             <div className={`w-1/2 ${isLeft ? 'pr-4 sm:pr-8' : 'pl-4 sm:pl-8'} ${isLeft ? 'order-1' : 'order-3'}`}> 
-                <div className={`bg-white p-4 rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 h-full flex flex-col ${isLeft ? 'text-right border-r-4' : 'text-left border-l-4'} border-[#E30613]`}>
+                <div className={`bg-white p-4 rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 h-full flex flex-col justify-between overflow-hidden ${isLeft ? 'text-right border-r-4' : 'text-left border-l-4'} border-[#E30613]`}>
                     
                     {/* Título del Período (Alineado con el contenido) */}
                     <h3 className={`text-xl md:text-xl font-bold text-[#E30613] mb-2 ${isLeft ? 'self-end' : 'self-start'}`}>
@@ -1299,9 +1298,10 @@ const TimelineItem = ({ data, index }) => {
                     </h3>
  
                     {/* Descripción de IA */}
-                    <p className="text-sm md:text-basic font-medium text-gray-800 italic leading-relaxed whitespace-pre-line flex-1"> {/* Tamaño de fuente ajustado */}
-                        {data.description}
+                    <p className="text-sm md:text-base text-gray-700 leading-tight">
+                      {data.description}
                     </p>
+
                     
                     {/* Énfasis en la generación por IA */}
                     <span className={`inline-flex items-center mt-2 text-xs font-semibold text-[#BA0C2F] bg-red-50 px-2 py-0.5 rounded-full ${isLeft ? 'self-end' : 'self-start'}`}>
@@ -1329,159 +1329,171 @@ const TimelineItem = ({ data, index }) => {
 };
  
 const Block6 = ({ isActive }) => {
-    const [loading, setLoading] = useState(true);
-    const [llmData, setLlmData] = useState(null); // Estado para guardar los datos de la tabla 'llm'
- 
-    // Función para obtener datos de la tabla 'llm'
-    const fetchLlmData = async () => {
-        if (!SUPABASE_URL || !SUPABASE_KEY) {
-            console.error("Faltan SUPABASE_URL o SUPABASE_KEY.");
-            setLlmData(null); 
-            setLoading(false);
-            return;
-        }
- 
-        // Endpoint para la tabla 'llm', ordenado por fecha de creación descendente y limitado a 1 registro
-        const ENDPOINT_LLM = `${BASE_URL}/rest/v1/llm?select=pregunta_1,pregunta_2,resumen_final&order=created_at.desc&limit=1`;
- 
-        try {
-            const response = await fetch(ENDPOINT_LLM, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                },
-            });
- 
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
- 
-            const data = await response.json();
-            
-            if (data && data.length > 0) {
-                setLlmData(data[0]); // Tomar el registro más reciente
-                console.log("Datos de LLM cargados:", data[0]);
-            } else {
-                setLlmData({}); // Usar un objeto vacío para indicar que no hay datos
-                console.log("No se encontraron datos en la tabla 'llm'.");
-            }
- 
-        } catch (error) {
-            console.error("Error al obtener datos de la tabla 'llm':", error);
-            setLlmData({});
-        } finally {
-            // Se asume que el loading termina después de intentar el fetch, independientemente del éxito o fracaso.
-            setLoading(false);
-        }
-    };
- 
- 
-    useEffect(() => {
-        if (isActive) {
-            // CORRECCIÓN 1: Iniciar loading al activar, y dejar que fetchLlmData lo desactive
-            setLoading(true); 
-            // Simula el tiempo de procesamiento de la IA (efecto WOW) antes de hacer la llamada a la BDD
-            const timer = setTimeout(() => {
-                fetchLlmData();
-            }, 3000); 
-            return () => clearTimeout(timer);
+  const [loading, setLoading] = useState(true);
+  const [llmData, setLlmData] = useState(null);
+
+  // ---- FETCH A SUPABASE ----
+  const fetchLlmData = async () => {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      console.error("Faltan credenciales de Supabase.");
+      setLlmData(null);
+      setLoading(false);
+      return;
+    }
+
+    const ENDPOINT_LLM = `${BASE_URL}/rest/v1/llm?select=pregunta_1,pregunta_2,resumen_final&order=created_at.desc&limit=1`;
+
+    try {
+      const response = await fetch(ENDPOINT_LLM, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      setLlmData(data?.[0] || {});
+    } catch (err) {
+      console.error("Error al leer Supabase:", err);
+      setLlmData({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- TYPEWRITER ----
+  const typeWriter = (element, text, speed = 15) => {
+    return new Promise((resolve) => {
+      let i = 0;
+      element.innerHTML = "";
+
+      function typing() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(typing, speed);
         } else {
-            // Reinicia los datos si el slide se desactiva
-            setLlmData(null); 
+          resolve();
         }
-    }, [isActive]);
- 
- 
-    const timelineItems = useMemo(() => {
-        // Estructura base con iconos y títulos fijos, mapeando las claves de la BDD
-        const fixedStructure = [
-            {
-                period: "HOY (2025)", 
-                icon: Clock, 
-                theme: "Foco en la Resiliencia",
-                dataKey: 'pregunta_1', // Mapeo a columna
-                defaultDescription: "El análisis actual se centra en la **resiliencia operativa y la digitalización básica**."
-            },
-            {
-                period: "EVOLUCIÓN", 
-                icon: TrendingUp, 
-                theme: "La Brecha Estratégica",
-                dataKey: 'resumen_final', // Mapeo a columna
-                defaultDescription: "La **transición** exige pasar de la eficiencia a la creación de valor mediante la **innovación continua**."
-            },
-            {
-                period: "+18 AÑOS (2043)", 
-                icon: Rocket, 
-                theme: "Visión de Liderazgo Global",
-                dataKey: 'pregunta_2', // Mapeo a columna
-                defaultDescription: "El futuro se define por la **integración total de la IA** para la toma de decisiones predictiva."
-            }
-        ];
- 
-        if (!llmData) {
-            // Si aún no se cargan o hay un error, usa las descripciones por defecto
-            return fixedStructure.map(item => ({
-                ...item,
-                description: item.defaultDescription
-            }));
-        }
- 
-        // Mapear los datos de la BDD a la estructura de la línea de tiempo
-        return fixedStructure.map(item => ({
-            ...item,
-            // Asigna la descripción de la BDD, o un mensaje si el campo está vacío
-            description: llmData[item.dataKey] || `[Contenido dinámico de ${item.period} aún no disponible].`
-        }));
- 
-    }, [llmData]); // Re-calcular si los datos de la LLM cambian
- 
- 
-    if (loading) {
-        // Usa la nueva animación dramática para el Bloque 6
-        return (
-            <div className="h-full relative flex items-center justify-center bg-gray-900">
-                <LoadingOverlayBlock6 /> 
-            </div>
-        );
+      }
+      typing();
+    });
+  };
+
+  // ---- SECUENCIA DE ESCRITURA ----
+  const startSequence = async () => {
+    const elA = document.getElementById("visionActual");
+    const elB = document.getElementById("vision18");
+    const elC = document.getElementById("evolucion");
+
+    if (!elA || !elB || !elC) return;
+
+    await typeWriter(elA, llmData.pregunta_1 || "");
+    await typeWriter(elB, llmData.pregunta_2 || "");
+    await typeWriter(elC, llmData.resumen_final || "");
+  };
+
+  // ---- CARGA CUANDO SE ACTIVA EL SLIDE ----
+  useEffect(() => {
+    if (isActive) {
+      setLoading(true);
+      const timer = setTimeout(async () => {
+        await fetchLlmData();
+      }, 1500);
+
+      return () => clearTimeout(timer);
     }
-    
-    // Mostrar mensaje de NoDataMessage si no hay datos después de la carga
-    if (!llmData || Object.keys(llmData).length === 0 || (!llmData.pregunta_1 && !llmData.pregunta_2 && !llmData.resumen_final)) {
-        return (
-            <div className="h-full relative flex items-center justify-center bg-gray-50">
-                <NoDataMessage /> 
-            </div>
-        );
-    }
- 
+  }, [isActive]);
+
+  // ---- INICIAR TYPEWRITER CUANDO YA HAY DATOS ----
+  useEffect(() => {
+    if (!loading && llmData) startSequence();
+  }, [loading, llmData]);
+
+  // ---- LOADING ----
+  if (loading)
     return (
-        <div className="h-full flex flex-col pt-4 md:pt-6 bg-gray-50 animate-fadeIn overflow-y-auto"> 
-            
-            {/* Contenedor de la Línea de Tiempo */}
-            <div className="flex justify-center w-full min-h-[50vh] pb-100"> 
-                <div className="relative w-full max-w-6xl pt-4"> 
-                    
-                    {/* La verdadera línea vertical - Centered */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-gray-200"></div> 
- 
-                    {/* CORRECCIÓN 2: Mapear la constante 'timelineItems' (el useMemo) */}
-                    {timelineItems.map((item, index) => (
-                        <TimelineItem key={index} data={item} index={index} />
-                    ))}
-                    
-                    {/* Nota Final de IA */}
-                    <div className="text-center mt-10 p-3 bg-red-50 rounded-lg max-w-md mx-auto shadow-md animate-slideUp" style={{ animationDelay: `${(timelineItems.length) * 300 + 500}ms` }}>
-                         <p className="text-xs text-[#BA0C2F] font-semibold"> 
-                            Estos puntos representan la síntesis de la evolución de las respuestas del cuestionario (Hoy vs. 18 Años).
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="h-full flex items-center justify-center bg-gray-900">
+        <LoadingOverlayBlock6 />
+      </div>
     );
+
+  // ---- NO DATA ----
+  if (!llmData || Object.keys(llmData).length === 0)
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <NoDataMessage />
+      </div>
+    );
+
+  // ---- UI NUEVA (70% / 30%) ----
+  return (
+    <div className="h-full w-full grid grid-cols-1 lg:grid-cols-10 gap-4 p-6 bg-gray-50">
+
+      {/* Columna izquierda (70%) */}
+      <div className="col-span-1 lg:col-span-7 flex flex-col gap-4">
+
+        {/* Visión Actual */}
+        <div className="flex-1 bg-white p-6 rounded-xl shadow-xl h-full">
+          <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
+            Propósito Actual
+          </h2>
+          <p id="visionActual" className="text-gray-700 text-lg leading-relaxed"></p>
+        </div>
+
+        {/* Visión 18 Años */}
+        <div className="flex-1 bg-white p-6 rounded-xl shadow-xl h-full">
+          <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
+            Propósito en 18 Años
+          </h2>
+          <p id="vision18" className="text-gray-700 text-lg leading-relaxed"></p>
+        </div>
+      </div>
+
+      {/* Columna derecha (30%) */}
+      <div className="col-span-1 lg:col-span-3 bg-red-700 p-8 rounded-xl shadow-2xl flex flex-col h-full">
+        <h2 className="text-2xl font-bold text-white border-b border-red-500 pb-3 mb-6">
+          Evolución de propósito
+        </h2>
+        <p id="evolucion" className="text-white text-lg leading-relaxed"></p>
+      </div>
+    </div>
+  );
 };
+
+
+
+// ======================================================
+// --- SUBCOMPONENTE PARA PANEL DE VISIÓN ---
+// ======================================================
+const VisionPanel = ({ title, color, content, panelId }) => {
+  const textColor =
+    color === "red" ? "text-white" : "text-gray-800";
+  const bg =
+    color === "red" ? "bg-red-700 hover:shadow-red-900" : "bg-white hover:shadow-blue-300";
+  const borderIcon =
+    color === "red" ? "text-red-300" : "text-blue-500";
+
+  return (
+    <div className={`${bg} p-6 rounded-xl shadow-2xl transition-all flex flex-col`}>
+      <h2 className={`text-2xl font-bold border-b-2 pb-3 mb-4 flex items-center ${textColor}`}>
+        <svg className={`w-6 h-6 mr-2 ${borderIcon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3" />
+        </svg>
+        {title}
+      </h2>
+
+      <p className={`${textColor} text-lg leading-relaxed whitespace-pre-line`}>
+        {content}
+      </p>
+    </div>
+  );
+};
+
 
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);

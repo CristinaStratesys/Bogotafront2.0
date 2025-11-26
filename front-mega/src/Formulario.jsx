@@ -547,13 +547,13 @@ export default function App() {
                             {/* Propósito Actual */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                    <Target size={16} /> Propósito de su empresa dentro del programa MEGA <span className="text-red-500">*</span>
+                                    <Target size={16} /> ¿Cual es el propósito actual de su empresa? <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
                                     value={formData.purposeCurrent}
                                     onChange={(e) => handleInputChange('purposeCurrent', e.target.value)}
                                     maxLength={300}
-                                    placeholder="Describe brevemente la misión o razón de ser actual de tu empresa dentro del programa."
+                                    placeholder="Describa brevemente el propósito misión o razón de ser actual de su empresa."
                                     className={`w-full p-4 rounded-xl border h-32 resize-none focus:ring-2 focus:ring-red-100 focus:border-[#E30613] outline-none transition-all ${
                                         errors.purposeCurrent ? 'border-red-500' : 'border-gray-300'
                                     }`}
@@ -569,13 +569,13 @@ export default function App() {
                             {/* Propósito Futuro */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                    <BarChart3 size={16} /> Visión a 18 años para el programa MEGA <span className="text-red-500">*</span>
+                                    <BarChart3 size={16} /> ¿Cual considera será el propósito de su empresa en 18 años? <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
                                     value={formData.purposeFuture}
                                     onChange={(e) => handleInputChange('purposeFuture', e.target.value)}
                                     maxLength={300}
-                                    placeholder="Describe cómo imaginas la evolución y propósito futuro del programa."
+                                    placeholder="Describa cómo imagina la evolución y propósito futuro de su empresa en 18 años."
                                     className={`w-full p-4 rounded-xl border h-32 resize-none focus:ring-2 focus:ring-red-100 focus:border-[#E30613] outline-none transition-all ${
                                         errors.purposeFuture ? 'border-red-500' : 'border-gray-300'
                                     }`}

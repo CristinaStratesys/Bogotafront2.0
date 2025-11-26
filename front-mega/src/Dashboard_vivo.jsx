@@ -156,6 +156,23 @@ const KPICard = ({ title, value, icon: Icon, subtext }) => (
   </div>
 );
 
+const BigKPI = ({ title, value, icon: Icon }) => (
+  <div className="h-full w-full flex flex-col items-center justify-center p-12">
+
+    <Icon size={60} className="text-[#E30613] mb-6 opacity-80" />
+
+    <h3 className="text-3xl font-semibold text-gray-600 tracking-wide mb-4">
+      {title}
+    </h3>
+
+    <p className="text-[7rem] font-extrabold text-gray-900 leading-none">
+      {value}
+    </p>
+
+  </div>
+);
+
+
 /**
  * Componente de lista de feed con animación.
  */
@@ -373,7 +390,7 @@ export default function DashboardPresentation() {
         </section>
 
         {/* ZONA DERECHA: DATOS */}
-        <section className="w-[70%] bg-[#F9FAFB] p-8 grid grid-cols-2 gap-8 h-full">
+        <section className="w-[70%] bg-white p-8 grid grid-cols-2 gap-8 h-full">
             
             {/* COLUMNA 1: FEED */}
             <div className="flex flex-col h-full">
@@ -403,16 +420,14 @@ export default function DashboardPresentation() {
             </div>
 
             {/* COLUMNA 2: KPIs */}
-            <div className="flex flex-col gap-6">
-                <div className="grid grid-cols-1 gap-4">
-                    <KPICard 
-                        title="Participantes Totales" 
-                        value={metrics.totalParticipantes} 
-                        icon={Users}
-                        subtext="+12% vs ayer"
-                    />
-                </div>
+            <div className="h-full">
+                <BigKPI 
+                    title="Participantes Totales"
+                    value={metrics.totalParticipantes}
+                    icon={Users}
+                />
             </div>
+
         </section>
       </main>
     </div>

@@ -162,10 +162,19 @@ const KPICard = ({ title, value, icon: Icon, subtext }) => (
 const FeedItem = ({ item }) => (
    <div className={`${item.isNew ? "animate-new" : "animate-slideIn"} mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-red-100 transition-colors`}>
     <div className="flex justify-between items-start mb-2">
-      <span className="font-bold text-gray-800 flex items-center gap-2">
+     <span className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+
+    <span className="text-gray-500 text-sm">
+        Sector:
+    </span>
+
+    <span className="text-gray-800 font-semibold capitalize">
         {item.usuario}
-      </span>
+    </span>
+</span>
+
+
       <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
         {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </span>
@@ -173,11 +182,13 @@ const FeedItem = ({ item }) => (
     <p className="text-gray-600 text-sm leading-relaxed">
       "{item.texto}"
     </p>
-    <div className="mt-2 flex justify-end">
-        <span className="text-[10px] uppercase font-bold text-red-600 tracking-wide opacity-70">
-            #{item.categoria}
-        </span>
-    </div>
+   <div className="mt-3 flex justify-end">
+  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+    Adopción tecnológica:{" "}
+    <span className="capitalize font-bold">{item.categoria}</span>
+  </span>
+</div>
+
   </div>
 );
 

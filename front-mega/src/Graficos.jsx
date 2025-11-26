@@ -484,89 +484,30 @@ const pieEmployees = displayedEmployees.filter((e) => e.value > 0);
             </h3>
           </div>
           <div className="flex-1 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={data.treemap}
-                dataKey="size"
-                stroke="#fff"
-                isAnimationActive={false}
-                aspectRatio={4 / 3}
-                content={({ x, y, width, height, name, size }) => {
-                  // MULTILÍNEA SOLO PARA ESTA INDUSTRIA
-                  let displayName = name;
-                  if (name === "Energía y Minería") {
-                    displayName = ["Energía y", "Minería"];
-                  }
-
+             <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-1">
+                {data.treemap.map((item, idx) => {
+                  const spanClass =
+                    idx === 0
+                      ? "col-span-2 row-span-2"    // MÁS grande
+                      : idx <= 2
+                      ? "col-span-2 row-span-1"    // medianos
+                      : "col-span-1 row-span-1";   // pequeños
+                  const isSelected = filter === item.name; // Lógica de filtrado de ejemplo
                   return (
-                    <g>
-                      <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        fill={PALETTE.industries[name] || PALETTE.industries["Otra"]}
-                        stroke="#fff"
-                      />
-
-                      {/* Mostrar textos solo si el bloque es grande */}
-                      {width > 60 && height > 40 && (
-                        <>
-                          {Array.isArray(displayName) ? (
-                            // ---- RENDER MULTILÍNEA ----
-                            displayName.map((line, i) => (
-                              <text
-                                key={i}
-                                x={x + width / 2}
-                                y={y + height / 2 - 6 + i * 18}
-                                textAnchor="middle"
-                                fill="#000"
-                                fontSize={20}
-                                stroke="none"
-                                fontWeight="bold"
-                              >
-                                {line}
-                              </text>
-                            ))
-                          ) : (
-                            // ---- TEXTO NORMAL ----
-                            <text
-                              x={x + width / 2}
-                              y={y + height / 2 - 6}
-                              textAnchor="middle"
-                              fill="#000"
-                              fontSize={20}
-                              stroke="none"
-                              fontWeight="bold"
-                            >
-                              {displayName}
-                            </text>
-                          )}
-
-                          {/* Número de empresas */}
-                          <text
-                            x={x + width / 2}
-                            y={
-                              name === "Energía y Minería"
-                                ? y + height / 2 + 30   // ⬅️ MÁS ABAJO SOLO AQUÍ
-                                : y + height / 2 + 14   // ⬅️ posición normal
-                            }
-                            textAnchor="middle"
-                            fill="#000"
-                            fontSize={16}
-                            opacity={0.9}
-                            stroke="none"
-                            fontWeight="bold"
-                          >
-                            {size} empresas
-                          </text>
-                        </>
-                      )}
-                    </g>
+                    <div
+                      key={item.name}
+                      onClick={() => setFilter(item.name)}
+                      className={`${spanClass} relative group cursor-pointer transition-all duration-300 overflow-hidden rounded-md border-2 ${isSelected ? 'border-black scale-[0.98]' : 'border-transparent hover:border-white hover:scale-[1.02]'}`}
+                      style={{ backgroundColor: item.fill }}
+                    >
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-2 text-center">
+                        <span className="font-bold text-shadow-sm text-sm md:text-base">{item.name}</span>
+                        <span className="text-xs md:text-sm opacity-90">{item.size} empresas</span>
+                      </div>
+                    </div>
                   );
-                }}
-              />
-            </ResponsiveContainer>
+                })}
+             </div>
           </div>
         </Card>
  

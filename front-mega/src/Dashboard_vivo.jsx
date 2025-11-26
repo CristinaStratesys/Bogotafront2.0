@@ -149,9 +149,6 @@ const KPICard = ({ title, value, icon: Icon, subtext }) => (
     <div>
       <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</p>
       <h3 className="text-3xl font-bold text-gray-800 mt-1">{value}</h3>
-      <p className="text-xs text-green-600 mt-1 font-semibold flex items-center">
-        <TrendingUp size={12} className="mr-1" /> {subtext}
-      </p>
     </div>
     <div className="bg-red-50 p-3 rounded-full">
       <Icon size={24} color={COLORS.primary} />
@@ -165,10 +162,19 @@ const KPICard = ({ title, value, icon: Icon, subtext }) => (
 const FeedItem = ({ item }) => (
    <div className={`${item.isNew ? "animate-new" : "animate-slideIn"} mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:border-red-100 transition-colors`}>
     <div className="flex justify-between items-start mb-2">
-      <span className="font-bold text-gray-800 flex items-center gap-2">
+     <span className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+
+    <span className="text-gray-500 text-sm">
+        Sector:
+    </span>
+
+    <span className="text-gray-800 font-semibold capitalize">
         {item.usuario}
-      </span>
+    </span>
+</span>
+
+
       <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
         {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </span>
@@ -176,11 +182,13 @@ const FeedItem = ({ item }) => (
     <p className="text-gray-600 text-sm leading-relaxed">
       "{item.texto}"
     </p>
-    <div className="mt-2 flex justify-end">
-        <span className="text-[10px] uppercase font-bold text-red-600 tracking-wide opacity-70">
-            #{item.categoria}
-        </span>
-    </div>
+   <div className="mt-3 flex justify-end">
+  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+    Adopción tecnológica:{" "}
+    <span className="capitalize font-bold">{item.categoria}</span>
+  </span>
+</div>
+
   </div>
 );
 
@@ -199,6 +207,7 @@ export default function DashboardPresentation() {
 
    const [lastSeenId, setLastSeenId] = useState(null);
    const [shownIds, setShownIds] = useState([]);
+   const [pendingQueue, setPendingQueue] = useState([]);
 
   // -- EFECTOS --
 
@@ -223,24 +232,50 @@ export default function DashboardPresentation() {
   loadInitial();
 
   const intervalId = setInterval(async () => {
-    const next = await fetchNextResponse(lastSeenId, shownIds);
 
-    if (next) {
-      const formatted = {
-        id: next.id,
-        usuario: next.industria ?? "Usuario",
-        texto: next.proposito_hoy ?? "Sin texto",
-        timestamp: new Date(next.created_at),
-        categoria: next.adopcion_tech ?? "General",
-        isNew: true
-      };
+  // 1. Obtener TODAS las respuestas de Supabase
+  const { data, error } = await supabase
+    .from("respuestas")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-      setRespuestas(prev => [formatted, ...prev].slice(0, 6));
-      setLastSeenId(next.id);
+  if (error || !data) return;
 
-      setShownIds(prev => [...prev, next.id]);
-    }
-  }, 5000);
+  // 2. Detectar NUEVAS respuestas → No mostradas aún
+  const nuevas = data.filter(r => !shownIds.includes(r.id));
+
+  // 3. Si hay nuevas → añadirlas a la cola
+  if (nuevas.length > 0) {
+    setPendingQueue(prev => [...prev, ...nuevas]);
+  }
+
+  // 4. Si la cola tiene elementos → mostrar SOLO 1
+  setPendingQueue(prev => {
+    if (prev.length === 0) return prev;
+
+    const next = prev[0];
+
+    const formatted = {
+      id: next.id,
+      usuario: next.industria ?? "Usuario",
+      texto: next.proposito_hoy ?? "Sin texto",
+      timestamp: new Date(next.created_at),
+      categoria: next.adopcion_tech ?? "General",
+      isNew: true
+    };
+
+    // Insertar al inicio y limitar a solo 3 visibles
+    setRespuestas(r => [formatted, ...r].slice(0, 3));
+
+    // Registrar como mostrada
+    setShownIds(ids => [...ids, next.id]);
+
+    // Eliminar ese item de la cola
+    return prev.slice(1);
+  });
+
+}, 4000); // ← aquí eliges el intervalo (4s)
+
 
   return () => clearInterval(intervalId);
 }, [lastSeenId, shownIds]);
@@ -276,16 +311,42 @@ export default function DashboardPresentation() {
 
       
       {/* HEADER SUPERIOR */}
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-8 shadow-sm z-10">
-         <div className="flex items-center gap-3">
-            <div className="bg-[#E30613] text-white font-bold px-3 py-1 rounded text-sm tracking-widest">MEGA</div>
-            <h1 className="font-semibold text-lg text-gray-700">Dashboard Administrativo 2025</h1>
-         </div>
-         <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold border border-green-100">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            EN VIVO
-         </div>
-      </header>
+<header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
+
+  {/* Botón izquierda → Volver a /Admin */}
+  <button 
+    onClick={() => window.location.href = "/Admin"}
+    className="flex items-center gap-2 text-gray-700 hover:text-[#E30613] transition font-semibold"
+  >
+    ← Volver
+  </button>
+
+  {/* Logos centrados */}
+  <div className="flex items-center gap-4">
+    <img 
+      src="/Cámara_de_Comercio_de_Bogotá_logo.png"
+      alt="Cámara de Comercio"
+      className="h-10 object-contain"
+    />
+    <img 
+      src="/Stratesys.png"
+      alt="Stratesys"
+      className="h-7 object-contain"
+    />
+  </div>
+
+  {/* Botón En vivo */}
+  <button 
+    className="flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 px-3 py-1 rounded-full text-sm font-semibold"
+  >
+    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+    En vivo
+  </button>
+
+</header>
+
+
+
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex flex-1 h-full overflow-hidden">
@@ -295,8 +356,8 @@ export default function DashboardPresentation() {
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#E30613] to-[#BA0C2F]"></div>
             
             <div className="mb-8">
-                <h2 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">Tu opinión<br/>importa</h2>
-                <p className="text-gray-500 text-lg">Construyamos la visión juntos.</p>
+                <h2 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">¡Participa ahora!<br/></h2>
+                <p className="text-gray-500 text-lg">Rellena el formulario para participar.</p>
             </div>
 
             <div className="relative group">
@@ -309,13 +370,6 @@ export default function DashboardPresentation() {
                 </div>
             </div>
 
-            <div className="mt-8 flex flex-col items-center gap-2">
-                <p className="font-bold text-[#E30613] flex items-center gap-2 text-lg">
-                    <Wifi size={20} />
-                    
-                </p>
-                <p className="text-sm text-gray-400">Acceso directo sin registro</p>
-            </div>
         </section>
 
         {/* ZONA DERECHA: DATOS */}
@@ -328,9 +382,11 @@ export default function DashboardPresentation() {
                         <MessageSquare className="text-[#E30613]" size={24} />
                         Últimas Aportaciones
                     </h3>
+                    {/*
                     <span className="text-xs font-mono bg-gray-200 text-gray-600 px-2 py-1 rounded">
-                        SYNC: 5s
+                        SYNC: 4s
                     </span>
+                    */}
                 </div>
                 
                 <div className="h-[80vh] overflow-hidden pr-2 flex flex-col gap-4">
@@ -354,12 +410,6 @@ export default function DashboardPresentation() {
                         value={metrics.totalParticipantes} 
                         icon={Users}
                         subtext="+12% vs ayer"
-                    />
-                    <KPICard 
-                        title="Nivel de Engagement" 
-                        value={`${metrics.tasaAdopcion}%`} 
-                        icon={Activity}
-                        subtext="Excelente"
                     />
                 </div>
             </div>

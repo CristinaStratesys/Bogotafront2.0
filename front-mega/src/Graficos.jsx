@@ -1427,7 +1427,60 @@ const Block6 = ({ isActive }) => {
   );
 };
 
-
+// --- BLOQUE 7: DATOS DEL PONENTE ---
+const Block7 = ({ isActive }) => {
+  return (
+    <div className="h-full w-full bg-gray-50 flex items-center justify-center px-4 md:px-8 py-8">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col md:flex-row animate-fadeIn">
+        {/* Columna izquierda: avatar + nombre */}
+        <div className="md:w-1/3 bg-gradient-to-b from-red-50 to-gray-50 flex flex-col items-center justify-center px-6 py-8 md:py-12">
+          <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-white shadow-lg border-4 border-white flex items-center justify-center mb-6">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden">
+              <img
+                src="/Ximena.jpg"
+                alt="Foto de la ponente"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 text-center">
+            Ximena Ángel Gaviria
+          </h2>
+            {/* <p className="mt-3 text-xs md:text-sm text-gray-500 text-center uppercase tracking-[0.25em]">
+              Ponente
+            </p> */}
+        </div>
+ 
+        {/* Columna derecha: cargo + contacto */}
+        <div className="md:w-2/3 px-6 md:px-10 py-8 md:py-12 flex flex-col justify-center">
+          <p className="text-xl md:text-3xl font-bold text-gray-800">
+            Country Manager
+          </p>
+          <p className="mt-2 text-sm md:text-base text-gray-500">
+            Especialista en transformación digital, SAP y analítica de datos, con más de 21 años de experiencia impulsando automatización, 
+            eficiencia y ventaja competitiva para empresas de diversos sectores.
+          </p>
+ 
+          <div className="mt-8 space-y-4 text-gray-700 text-base md:text-lg">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-red-50 text-[#E30613] text-lg md:text-xl">
+                📞
+              </span>
+              <span>3143950959</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-red-50 text-[#E30613] text-lg md:text-xl">
+                ✉️
+              </span>
+              <span>Ximena.angel@stratesys-ts.com</span>
+            </div>
+           
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ======================================================
 // --- SUBCOMPONENTE PARA PANEL DE VISIÓN ---
@@ -1459,7 +1512,7 @@ const VisionPanel = ({ title, color, content, panelId }) => {
 
 export default function DashboardApp() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 7; // Reducido a 3: Intro, Block1, Block2, Block6
+  const totalSlides = 8; // Reducido a 3: Intro, Block1, Block2, Block6
  
   const nextSlide = () => setCurrentSlide(p => Math.min(p + 1, totalSlides - 1));
   const prevSlide = () => setCurrentSlide(p => Math.max(p - 1, 0));
@@ -1500,6 +1553,7 @@ export default function DashboardApp() {
         {currentSlide === 4 && <Block4 isActive={true} />}
         {currentSlide === 5 && <Block5 isActive={true} />}
         {currentSlide === 6 && <Block6 isActive={true} />}
+        {currentSlide === 7 && <Block7 isActive={true} />}
       </main>
  
       <div className="absolute bottom-8 right-8 flex gap-4 z-50">

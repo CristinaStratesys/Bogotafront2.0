@@ -92,7 +92,10 @@ const DataService = {
     };
  
     try {
-        const response = await fetch(`${ENDPOINT}?select=*`, { headers });
+        const url = `${ENDPOINT}?select=*`;
+
+        const response = await fetch(url, { headers });
+
        
         console.log("📡 [RESPONSE] Status:", response.status);
         console.log("📡 [RESPONSE] Status Text:", response.statusText);
@@ -114,7 +117,36 @@ const DataService = {
         return null;
     }
   },
- 
+ getTechAggregated: (rows) => {
+  if (!rows || rows.length === 0) return [];
+
+  // Diccionario de conteo
+  const techCount = {};
+
+  rows.forEach((row) => {
+    const arr = Array.isArray(row.techs) ? row.techs : [];
+
+    arr.forEach((tech) => {
+      const name = (tech || "").trim();
+
+      if (!name) return;
+
+      techCount[name] = (techCount[name] || 0) + 1;
+    });
+  });
+
+  // Convertimos a array para Recharts
+  const result = Object.entries(techCount).map(([name, count]) => ({
+    name,
+    value: count,
+  }));
+
+  // Ordenar de mayor a menor como en Block1/2/3
+  result.sort((a, b) => b.value - a.value);
+
+  return result;
+},
+
     getDistributionData: async () => {
     const realData = await DataService.fetchFromSupabase();
 
@@ -846,6 +878,21 @@ salesData.sort((a, b) => {
 };
 
 // ---- SLIDE 4: TECNOLOGÍAS UTILIZADAS ------------------------------
+const SingleLineTick = ({ x, y, payload }) => {
+  return (
+    <text
+      x={x - 10}
+      y={y}
+      dy={4}
+      textAnchor="end"
+      fontSize={12}
+      fill="#555"
+      style={{ whiteSpace: "nowrap" }}
+    >
+      {String(payload.value).replace(/\s+/g, " ")}
+    </text>
+  );
+};
 
 const Block4 = ({ isActive }) => {
   const [techs, setTechs] = useState(null);
@@ -857,85 +904,46 @@ const Block4 = ({ isActive }) => {
     // Solo cargamos una vez cuando el slide se active
     if (!isActive || techs !== null || loading) return;
 
-    const fetchTechs = async () => {
-      setLoading(true);
-      setError(null);
-      setEmptyMsg(null);
+const fetchTechs = async () => {
+  setLoading(true);
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        console.error("[Block4] Faltan VITE_SUPABASE_URL o VITE_SUPABASE_KEY");
-        setError(
-          "Faltan las credenciales de Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_KEY)."
-        );
-        setTechs([]);
-        setLoading(false);
-        return;
-      }
+  try {
+    const ENDPOINT_TECHS = `${SUPABASE_URL}/rest/v1/respuestas`;
 
-      try {
-        const ENDPOINT_TECHS = `${SUPABASE_URL}/rest/v1/techs`;
-
-        const params = new URLSearchParams({
-          select: "tecnologia,adopcion", // 👈 columnas reales
-        });
-        params.append("order", "adopcion.desc");
-
-        const url = `${ENDPOINT_TECHS}?${params.toString()}`;
-        const headers = {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          Accept: "application/json",
-        };
-
-        console.log("▶️ [Block4] Llamando a:", url);
-
-        const response = await fetch(url, { headers });
-        const rawText = await response.text();
-        console.log(
-          "📡 [Block4] Status:",
-          response.status,
-          response.statusText,
-          "Body:",
-          rawText
-        );
-
-        if (!response.ok) {
-          setError(
-            `Error HTTP ${response.status} - ${response.statusText}. Respuesta del servidor: ${rawText || "(sin cuerpo)"}`
-          );
-          setTechs([]);
-          setLoading(false);
-          return;
-        }
-
-        const data = rawText ? JSON.parse(rawText) : [];
-
-        // 🔍 Mapeo sencillo y robusto
-        const mapped = (data || []).map((row) => ({
-          name: row.tecnologia || "",                         // 👈 OBLIGAMOS a usar 'tecnologia'
-          value: parseFloat(row.adopcion ?? 0) || 0,          // en porcentaje
-        }));
-
-        console.log("[Block4] Mapped data:", mapped);
-
-        // si realmente viene vacío
-        if (!mapped.length || !mapped.some((t) => t.name)) {
-          setEmptyMsg("No se encontraron registros en la tabla 'techs'.");
-        }
-
-        setTechs(mapped);
-      } catch (err) {
-        console.error("❌ [Block4] Error cargando tecnologías:", err);
-        setError(
-          `No se pudieron cargar las tecnologías desde la base de datos. Detalle: ${
-            err?.message || String(err)
-          }`
-        );
-        setTechs([]);
-      } finally {
-        setLoading(false);
-      }
+    const headers = {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Accept: "application/json",
     };
+
+    const response = await fetch(ENDPOINT_TECHS, { headers });
+    const rawText = await response.text();
+
+    if (!response.ok) throw new Error(rawText);
+
+    const data = rawText ? JSON.parse(rawText) : [];
+
+    // Mandamos a DataService para procesar igual que Block2/3
+    const processed = DataService.getTechAggregated(data);
+
+    // Convertir a porcentaje del total de empresas
+    const totalCompanies = data.length;   // número de filas = número de empresas
+
+    const percentTechs = processed.map(t => ({
+      name: t.name,
+      value: totalCompanies ? Math.round((t.value / totalCompanies) * 100) : 0
+    }));
+
+    setTechs(percentTechs);
+
+  } catch (err) {
+    console.error(err);
+    setError("No se pudo leer la tabla techs.");
+    setTechs([]);
+  }
+  setLoading(false);
+};
+
 
     fetchTechs();
   }, [isActive, techs, loading]);
@@ -956,6 +964,24 @@ const Block4 = ({ isActive }) => {
 
   // Solo mostramos "sin datos" si de verdad no hay ninguna tecnología con nombre
   const visibleTechs = (techs || []).filter((t) => t.name);
+
+// === CÁLCULO DINÁMICO ===
+const maxValue = Math.max(...visibleTechs.map(t => t.value));
+
+let domainX;
+let ticksX;
+
+// ✔ Caso 1: máximo < 80 → comportamiento ORIGINAL (nada de ticks forzados)
+if (maxValue < 80) {
+  domainX = [0, maxValue + 5];  // como tenía antes
+  ticksX = undefined;           // ⚠️ IMPORTANTE: sin ticks → nada de 50%
+}
+
+// ✔ Caso 2: máximo ≥ 80 → escala fija 0–100
+else {
+  domainX = [0, 100];
+  ticksX = [0, 20, 40, 60, 80, 100];
+}
 
   if (emptyMsg || !visibleTechs.length) {
     return (
@@ -980,20 +1006,22 @@ const Block4 = ({ isActive }) => {
           <BarChart
             data={visibleTechs}
             layout="vertical"
-            margin={{ top: 20, right: 50, left: 40, bottom: 20 }}
+            margin={{ top: 10, right: 50, left: 20, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             {/* eje Y: nombre de la tecnología */}
             <YAxis
               dataKey="name"
               type="category"
-              tick={{ fill: "#555", fontSize: 12 }}
-              width={180}
+              tick={<SingleLineTick />}
+              width={200}
+              interval={0}
             />
             {/* eje X: porcentaje */}
             <XAxis
               type="number"
-              domain={[0, "dataMax + 5"]}
+              domain={domainX}
+              ticks={ticksX}
               tickFormatter={(v) => `${v}%`}
             />
             <RechartsTooltip

@@ -4,7 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 
 // Importa tus componentes
 import Formulario from './Formulario.jsx'; 
-import Graficos from './Graficos.jsx'; 
+import Graficos from './Graficas/Graficos'; 
 import DashBoard from './Dashboard_vivo.jsx';
 import Admin from './Panel_admin.jsx';  
 

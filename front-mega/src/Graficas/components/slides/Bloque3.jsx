@@ -22,8 +22,8 @@ import { PALETTE } from "../../constants/palette";
 
 const SALES_ORDER = [
   "Grande - > $50.000 M",
-  "Mediana (alta) - $10.000-50.000 M",
-  "Mediana (baja) - $1.000-10.000 M",
+  "Mediana (Alta) - $10.000-50.000 M",
+  "Mediana (Baja) - $1.000-10.000 M",
   "Pequeña - < $1.000 M",
 ];
 

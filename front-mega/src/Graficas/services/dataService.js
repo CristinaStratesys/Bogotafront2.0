@@ -10,6 +10,9 @@ import {
 } from "../Config/supabaseConfig";
 import { PALETTE, EMPLOYEE_ORDER } from "../constants/palette";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 const { SUPABASE_URL, SUPABASE_KEY, BASE_URL } = SUPABASE_CONFIG;
 
 // Log de entorno una vez al cargar el módulo
@@ -156,174 +159,108 @@ const getTechAggregated = (rows) => {
  *  - adopción por volumen de ventas
  */
 const getDistributionData = async () => {
-  const realData = await fetchFromTable(SUPABASE_TABLES.RESPUESTAS);
+  try {
+    console.log("[DataService] Llamando a backend /api/distribution...");
 
-  if (realData === null) {
-    return {
-      error: "No se pudo conectar a la base de datos.",
-      treemap: [],
-      employees: { total: [] },
-    };
-  }
+    const res = await fetch(`${API_BASE_URL}/api/distribution`);
 
-  if (realData.length === 0) {
-    return {
-      empty: "No se encontraron datos en la tabla.",
-      treemap: [],
-      employees: { total: [] },
-      techAdoption: { total: [] },
-      salesAdoption: { total: [] },
-    };
-  }
-
-  console.log("📡 [Service] Procesando datos de respuestas...");
-
-  const sectors = {}; // Empresas por industria
-  const employeesGroups = {
-    "1-50": 0,
-    "51-200": 0,
-    "201-500": 0,
-    ">500": 0,
-  };
-  const sectorsTech = {}; // Adopción por industria
-  const salesVol = {}; // Adopción por volumen de ventas
-
-  realData.forEach((row) => {
-    // 1) INDUSTRIA
-    const industriaRaw = row.industria
-      ? normalizeText(row.industria)
-      : "otra";
-
-    const industria = INDUSTRY_MAP[industriaRaw] || "Otra";
-
-    // Contar empresas por industria
-    sectors[industria] = (sectors[industria] || 0) + 1;
-
-    // Estructura de adopción por industria
-    if (!sectorsTech[industria]) {
-      sectorsTech[industria] = initAdoptionObject();
-    }
-
-    // 2) EMPLEADOS (normalizar guiones)
-    let numEmpleados = (row.empleados || "1-50")
-      .replace(/[\u2013\u2014\u2212]/g, "-") // – — − -> -
-      .trim();
-
-    if (!EMPLOYEE_ORDER.includes(numEmpleados)) {
-      numEmpleados = ">500";
-    }
-    employeesGroups[numEmpleados] =
-      (employeesGroups[numEmpleados] || 0) + 1;
-
-    // 3) ADOPCIÓN TECNOLÓGICA
-    const adopcion = normalizeAdoptionLevel(row.adopcion_tech);
-    sectorsTech[industria][adopcion] += 1;
-
-    // 4) VOLUMEN DE VENTAS
-    const ventas =
-      row.volumen_ventas && row.volumen_ventas.trim() !== ""
-        ? row.volumen_ventas.trim()
-        : "Otros";
-
-    if (!salesVol[ventas]) {
-      salesVol[ventas] = initAdoptionObject();
-    }
-
-    const adopcionSales = normalizeAdoptionLevel(row.adopcion_tech);
-    salesVol[ventas][adopcionSales] += 1;
-  });
-
-  // --- Treemap por industria ---
-  let treemapData = Object.keys(sectors).map((key) => ({
-    name: key,
-    size: sectors[key],
-    fill: PALETTE.industries[key] || PALETTE.industries["Otra"],
-  }));
-
-  // Orden mayor→menor
-  treemapData.sort((a, b) => b.size - a.size);
-
-  // --- Distribución por empleados ---
-  const employeeData = EMPLOYEE_ORDER.map((key) => ({
-    name: key,
-    value: employeesGroups[key] || 0,
-  }));
-
-  // --- Adopción tecnológica por industria (porcentajes) ---
-  let techAdoptionData = Object.entries(sectorsTech).map(
-    ([industry, levels]) => {
-      const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+    if (!res.ok) {
+      const raw = await res.text();
+      console.error(
+        "[DataService] Error HTTP en /api/distribution:",
+        res.status,
+        res.statusText,
+        raw
+      );
       return {
-        name: industry,
-        Bajo: total ? (levels[ADOPTION_KEYS.BAJO] / total) * 100 : 0,
-        Medio: total ? (levels[ADOPTION_KEYS.MEDIO] / total) * 100 : 0,
-        Alto: total ? (levels[ADOPTION_KEYS.ALTO] / total) * 100 : 0,
-        Avanzado: total ? (levels[ADOPTION_KEYS.AVANZADO] / total) * 100 : 0,
+        error: `No se pudo obtener la distribución (HTTP ${res.status}).`,
       };
     }
-  );
 
-  // Orden alfabético con "Otra" al final
-  techAdoptionData.sort((a, b) => {
-    if (a.name === "Otra") return 1;
-    if (b.name === "Otra") return -1;
-    return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
-  });
+    const data = await res.json();
+    console.log("[DataService] Respuesta /api/distribution:", data);
 
-  // --- Adopción por volumen de ventas ---
-  let salesAdoptionData = Object.entries(salesVol).map(
-    ([ventas, levels]) => {
-      const total = Object.values(levels).reduce((sum, n) => sum + n, 0);
+    // Por si el backend marca tabla vacía
+    const hasTreemap = Array.isArray(data.treemap) && data.treemap.length > 0;
+    const hasEmployees =
+      data.employees &&
+      Array.isArray(data.employees.total) &&
+      data.employees.total.length > 0;
+
+    if (!hasTreemap && !hasEmployees) {
       return {
-        name: ventas,
-        Bajo: total ? (levels[ADOPTION_KEYS.BAJO] / total) * 100 : 0,
-        Medio: total ? (levels[ADOPTION_KEYS.MEDIO] / total) * 100 : 0,
-        Alto: total ? (levels[ADOPTION_KEYS.ALTO] / total) * 100 : 0,
-        Avanzado: total ? (levels[ADOPTION_KEYS.AVANZADO] / total) * 100 : 0,
+        ...data,
+        empty:
+          data.empty ||
+          "No se encontraron datos en la tabla de respuestas.",
       };
     }
-  );
 
-  console.log("📡 [Service] Resultado final listo.", {
-    treemapData,
-    employeeData,
-    techAdoptionData,
-    salesAdoptionData,
-  });
-
-  return {
-    treemap: treemapData,
-    employees: { total: employeeData },
-    techAdoption: { total: techAdoptionData },
-    salesAdoption: { total: salesAdoptionData },
-  };
+    // El backend ya devuelve la estructura lista:
+    // { treemap, employees, techAdoption, salesAdoption, ... }
+    return data;
+  } catch (err) {
+    console.error(
+      "[DataService] Excepción al llamar a /api/distribution:",
+      err
+    );
+    return {
+      error:
+        "Ocurrió un error al conectar con el backend de distribución de datos.",
+    };
+  }
 };
 
 /**
  * Lee todas las respuestas y devuelve el % de empresas que usan cada tecnología.
  */
 const getTechUsagePercentages = async () => {
-  const rows = await fetchFromTable(SUPABASE_TABLES.RESPUESTAS);
+  try {
+    console.log("[DataService] Llamando a backend /api/tech-usage...");
 
-  if (rows === null) {
-    return { error: "No se pudo conectar a la base de datos.", techs: [] };
+    const res = await fetch(`${API_BASE_URL}/api/tech-usage`);
+
+    if (!res.ok) {
+      const raw = await res.text();
+      console.error(
+        "[DataService] Error HTTP en /api/tech-usage:",
+        res.status,
+        res.statusText,
+        raw
+      );
+      return {
+        error: `No se pudo obtener tecnologías utilizadas (HTTP ${res.status}).`,
+        techs: [],
+      };
+    }
+
+    const data = await res.json();
+    console.log("[DataService] Respuesta /api/tech-usage:", data);
+
+    const techs = Array.isArray(data.techs) ? data.techs : [];
+
+    if (!techs.length) {
+      return {
+        empty:
+          data.empty ||
+          "No se encontraron registros de tecnologías en las respuestas.",
+        techs: [],
+      };
+    }
+
+    // El backend ya envía [{ name, value }] con value = %
+    return { techs };
+  } catch (err) {
+    console.error(
+      "[DataService] Excepción al llamar a /api/tech-usage:",
+      err
+    );
+    return {
+      error:
+        "Ocurrió un error al conectar con el backend de tecnologías utilizadas.",
+      techs: [],
+    };
   }
-
-  if (rows.length === 0) {
-    return { empty: "No se encontraron datos en la tabla.", techs: [] };
-  }
-
-  const aggregated = getTechAggregated(rows);
-  const totalCompanies = rows.length;
-
-  const percentTechs = aggregated.map((t) => ({
-    name: t.name,
-    value: totalCompanies
-      ? Math.round((t.value / totalCompanies) * 100)
-      : 0,
-  }));
-
-  return { techs: percentTechs };
 };
 
 /**
